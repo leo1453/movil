@@ -137,4 +137,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> ed3662d3dd25d79a327c2264dc5b9d3303e35403
