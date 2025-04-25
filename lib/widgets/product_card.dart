@@ -23,66 +23,96 @@ class ProductCard extends StatelessWidget {
       onTap: onTap,
       child: Stack(
         children: [
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                  offset: Offset(2, 4),
+                ),
+              ],
             ),
-            elevation: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Container(
-                    color: Colors.grey[200],
-                    child: Image.network(
-                      image,
+                // Imagen
+                Flexible(
+                  flex: 3,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(18),
+                    ),
+                    child: Container(
+                      color: Colors.grey[100],
                       width: double.infinity,
-                      height: 100,
-                      fit: BoxFit.contain,
-                      errorBuilder:
-                          (context, error, stackTrace) =>
-                              Icon(Icons.broken_image, size: 50),
+                      child: Image.network(
+                        image,
+                        fit: BoxFit.contain,
+                        errorBuilder:
+                            (context, error, stackTrace) =>
+                                Icon(Icons.broken_image, size: 50),
+                      ),
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8.0,
-                    vertical: 4.0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+
+                // Separación mínima
+                SizedBox(height: 6),
+
+                // Información del producto
+                Flexible(
+                  flex: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10.0,
+                      vertical: 6.0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        price,
-                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                      ),
-                    ],
+                        SizedBox(height: 4),
+                        Text(
+                          price,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           Positioned(
-            top: 8,
-            right: 8,
+            top: 10,
+            right: 10,
             child: GestureDetector(
               onTap: onFavoriteToggle,
-              child: Icon(
-                isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: isFavorite ? Colors.red : Colors.grey,
-                size: 20,
+              child: CircleAvatar(
+                backgroundColor: Colors.white,
+                radius: 18,
+                child: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorite ? Colors.red : Colors.grey,
+                  size: 22,
+                ),
               ),
             ),
           ),
