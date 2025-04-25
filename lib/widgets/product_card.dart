@@ -1,35 +1,26 @@
 import 'package:flutter/material.dart';
 
-class ProductCard extends StatefulWidget {
+class ProductCard extends StatelessWidget {
   final String title;
   final String price;
   final String image;
+  final bool isFavorite;
   final VoidCallback onTap;
+  final VoidCallback onFavoriteToggle;
 
   ProductCard({
     required this.title,
     required this.price,
     required this.image,
     required this.onTap,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
   });
-
-  @override
-  _ProductCardState createState() => _ProductCardState();
-}
-
-class _ProductCardState extends State<ProductCard> {
-  bool isFavorite = false;
-
-  void toggleFavorite() {
-    setState(() {
-      isFavorite = !isFavorite;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: onTap,
       child: Stack(
         children: [
           Card(
@@ -44,28 +35,37 @@ class _ProductCardState extends State<ProductCard> {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                   child: Container(
                     color: Colors.grey[200],
-                    child: Image.asset(
-                      widget.image,
+                    child: Image.network(
+                      image,
                       width: double.infinity,
                       height: 100,
-                      fit: BoxFit.contain, // Importante: imagen completa
+                      fit: BoxFit.contain,
+                      errorBuilder:
+                          (context, error, stackTrace) =>
+                              Icon(Icons.broken_image, size: 50),
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 4.0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.title,
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 4),
                       Text(
-                        widget.price,
+                        price,
                         style: TextStyle(fontSize: 12, color: Colors.grey[700]),
                       ),
                     ],
@@ -78,7 +78,7 @@ class _ProductCardState extends State<ProductCard> {
             top: 8,
             right: 8,
             child: GestureDetector(
-              onTap: toggleFavorite,
+              onTap: onFavoriteToggle,
               child: Icon(
                 isFavorite ? Icons.favorite : Icons.favorite_border,
                 color: isFavorite ? Colors.red : Colors.grey,

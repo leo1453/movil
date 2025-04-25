@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:proyecto/screens/addProduct_screen.dart';
-import '../widgets/product_card.dart';
+import '../widgets/product_card.dart'; // 👈 Aquí usaremos bien el ProductCard corregido
 import 'categories_screen.dart';
 import 'cart_screen.dart';
 import 'product_detail_screen.dart';
@@ -21,8 +21,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void toggleFavorite(Map<String, dynamic> product) {
     setState(() {
-      if (favoriteProducts.contains(product)) {
-        favoriteProducts.remove(product);
+      if (isFavorite(product)) {
+        favoriteProducts.removeWhere((p) => p['nombre'] == product['nombre']);
       } else {
         favoriteProducts.add(product);
       }
@@ -30,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   bool isFavorite(Map<String, dynamic> product) {
-    return favoriteProducts.contains(product);
+    return favoriteProducts.any((p) => p['nombre'] == product['nombre']);
   }
 
   @override
@@ -77,88 +77,23 @@ class _HomeScreenState extends State<HomeScreen> {
               final producto = productos[index];
               final data = producto.data() as Map<String, dynamic>;
 
-              return Stack(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  ProductDetailScreen(productData: data),
-                        ),
-                      );
-                    },
-                    child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(12),
-                              ),
-                              child: Image.network(
-                                data['imagen'],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(Icons.broken_image, size: 50);
-                                },
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  data['nombre'] ?? '',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  '${data['precio']} MXN',
-                                  style: TextStyle(
-                                    color: Colors.deepPurple,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+              return ProductCard(
+                title: data['nombre'] ?? '',
+                price: '${data['precio']} MXN',
+                image: data['imagen'] ?? '',
+                isFavorite: isFavorite(data),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => ProductDetailScreen(productData: data),
                     ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: GestureDetector(
-                      onTap: () {
-                        toggleFavorite(data);
-                      },
-                      child: CircleAvatar(
-                        backgroundColor: Colors.white,
-                        child: Icon(
-                          isFavorite(data)
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: Colors.red,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  );
+                },
+                onFavoriteToggle: () {
+                  toggleFavorite(data);
+                },
               );
             },
           );
@@ -213,7 +148,11 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => FavoritesScreen()),
+                  MaterialPageRoute(
+                    builder:
+                        (context) =>
+                            FavoritesScreen(favoriteProducts: favoriteProducts),
+                  ),
                 );
               },
             ),
