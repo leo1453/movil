@@ -13,8 +13,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController _descripcionController = TextEditingController();
   final TextEditingController _precioController = TextEditingController();
   final TextEditingController _imagenController = TextEditingController();
-  final TextEditingController _categoriaController = TextEditingController();
   final TextEditingController _stockController = TextEditingController();
+
+  String? _selectedCategory;
 
   void _guardarProducto() async {
     if (_formKey.currentState!.validate()) {
@@ -24,7 +25,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           'descripcion': _descripcionController.text.trim(),
           'precio': double.parse(_precioController.text.trim()),
           'imagen': _imagenController.text.trim(),
-          'categoria': _categoriaController.text.trim(),
+          'categoria': _selectedCategory,
           'stock': int.parse(_stockController.text.trim()),
         });
 
@@ -32,7 +33,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           SnackBar(content: Text('Producto agregado exitosamente')),
         );
 
-        Navigator.pop(context); // Regresa a la pantalla anterior
+        Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(
           context,
@@ -83,12 +84,36 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     (value) => value!.isEmpty ? 'Campo obligatorio' : null,
               ),
               SizedBox(height: 8),
-              TextFormField(
-                controller: _categoriaController,
-                decoration: InputDecoration(labelText: 'Categoría'),
+
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
+                items:
+                    ['Anime', 'Videojuegos', 'Cómics', 'Películas'].map((
+                      categoria,
+                    ) {
+                      return DropdownMenuItem(
+                        value: categoria,
+                        child: Text(categoria),
+                      );
+                    }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: 'Categoría',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
                 validator:
-                    (value) => value!.isEmpty ? 'Campo obligatorio' : null,
+                    (value) =>
+                        value == null ? 'Selecciona una categoría' : null,
               ),
+
               SizedBox(height: 8),
               TextFormField(
                 controller: _stockController,
