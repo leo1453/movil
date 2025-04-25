@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'cart_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
+  final Map<String, dynamic> productData;
+
+  ProductDetailScreen({required this.productData}); // 👈 Recibimos el producto
+
   @override
   _ProductDetailScreenState createState() => _ProductDetailScreenState();
 }
@@ -22,10 +26,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final product = widget.productData; // 👈 Accedemos al producto recibido
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Detalle del Producto',
+          product['nombre'] ?? 'Producto',
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.deepPurple,
@@ -67,7 +73,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagen del producto
+            // Imagen
             ClipRRect(
               borderRadius: BorderRadius.circular(15),
               child: Container(
@@ -75,41 +81,41 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 height: 300,
                 width: double.infinity,
                 alignment: Alignment.center,
-                child: Image.asset(
-                  'assets/imagenes/mona1.webp',
+                child: Image.network(
+                  product['imagen'] ?? '',
                   fit: BoxFit.contain,
                   width: 250,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(Icons.broken_image, size: 50);
+                  },
                 ),
               ),
             ),
             SizedBox(height: 16),
 
-            // Título del producto
+            // Nombre
             Text(
-              'Figura de Colección',
+              product['nombre'] ?? 'Producto',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-
             SizedBox(height: 8),
 
-            // Precio del producto
+            // Precio
             Text(
-              'Precio: 1500 MXN',
+              'Precio: ${product['precio']} MXN',
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.deepPurple,
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             SizedBox(height: 16),
 
-            // Descripción del producto
+            // Descripción
             Text(
-              'Edición especial, material PVC de alta calidad. Año de lanzamiento: 2024.',
+              product['descripcion'] ?? 'Sin descripción.',
               style: TextStyle(fontSize: 16),
             ),
-
             SizedBox(height: 24),
 
             // Selector de cantidad
@@ -141,10 +147,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ],
             ),
-
             SizedBox(height: 24),
 
-            // Botón de agregar al carrito
+            // Botón agregar al carrito
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

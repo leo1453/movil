@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:proyecto/screens/addProduct_screen.dart';
 import '../widgets/product_card.dart';
 import 'categories_screen.dart';
 import 'cart_screen.dart';
@@ -83,7 +84,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ProductDetailScreen(),
+                          builder:
+                              (context) =>
+                                  ProductDetailScreen(productData: data),
                         ),
                       );
                     },
@@ -259,6 +262,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.deepPurple,
+        child: Icon(Icons.add),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddProductScreen()),
+          );
+        },
       ),
     );
   }
