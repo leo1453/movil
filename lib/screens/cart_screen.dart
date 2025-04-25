@@ -74,9 +74,18 @@ class CartScreen extends StatelessWidget {
 
                   final cartItems = snapshot.data!.docs;
                   double total = 0;
+                  List<Map<String, dynamic>> cartProducts = [];
+
                   for (var item in cartItems) {
                     final data = item.data() as Map<String, dynamic>;
                     total += (data['precio'] ?? 0) * (data['cantidad'] ?? 1);
+
+                    cartProducts.add({
+                      'nombre': data['nombre'] ?? '',
+                      'precio': data['precio'] ?? 0,
+                      'cantidad': data['cantidad'] ?? 1,
+                      'imagen': data['imagen'] ?? '',
+                    });
                   }
 
                   return ListView(
@@ -94,7 +103,7 @@ class CartScreen extends StatelessWidget {
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 4,
-                            ), // 👈 más compacto
+                            ),
                             leading: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
@@ -112,8 +121,7 @@ class CartScreen extends StatelessWidget {
                               '${data['cantidad'] ?? 1} x ${data['precio'] ?? 0} MXN',
                             ),
                             trailing: Row(
-                              mainAxisSize:
-                                  MainAxisSize.min, // 👈 Esto es CLAVE
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
                                   '${(data['precio'] ?? 0) * (data['cantidad'] ?? 1)} MXN',
@@ -164,7 +172,10 @@ class CartScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => PaymentScreen(),
+                                builder:
+                                    (context) => PaymentScreen(
+                                      cartProducts: cartProducts,
+                                    ),
                               ),
                             );
                           },

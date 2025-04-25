@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PaymentScreen extends StatefulWidget {
+  final List<Map<String, dynamic>> cartProducts;
+
+  PaymentScreen({required this.cartProducts});
+
   @override
   _PaymentScreenState createState() => _PaymentScreenState();
 }
@@ -9,47 +15,92 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final _formKey = GlobalKey<FormState>();
   String _selectedPaymentMethod = 'Tarjeta de crédito';
 
-  // Controladores para los campos de formulario
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _postalCodeController = TextEditingController();
-
-  // Controladores para tarjeta de crédito / débito
   final TextEditingController _cardNumberController = TextEditingController();
   final TextEditingController _expiryDateController = TextEditingController();
   final TextEditingController _cvvController = TextEditingController();
-
-  // Controlador para PayPal
   final TextEditingController _paypalEmailController = TextEditingController();
 
-  void _confirmPurchase() {
+  double get totalAmount {
+    return widget.cartProducts.fold(
+      0,
+      (sum, item) => sum + (item['precio'] * item['cantidad']),
+    );
+  }
+
+  void _confirmPurchase() async {
     if (_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Procesando pago...')));
 
-      Future.delayed(Duration(seconds: 2), () {
-        showDialog(
-          context: context,
-          builder:
-              (_) => AlertDialog(
-                title: Text('¡Compra exitosa!'),
-                content: Text(
-                  'Gracias por tu compra de figuras coleccionables.',
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) {
+          throw Exception('Usuario no autenticado');
+        }
+
+        final uid = user.uid;
+        final orderData = {
+          'productos': widget.cartProducts,
+          'total': totalAmount,
+          'direccion': {
+            'nombre': _nameController.text,
+            'telefono': _phoneController.text,
+            'direccion': _addressController.text,
+            'ciudad': _cityController.text,
+            'codigoPostal': _postalCodeController.text,
+          },
+          'metodoPago': _selectedPaymentMethod,
+          'fecha': Timestamp.now(),
+          'estado': 'Pendiente',
+        };
+
+        // Guardar el pedido
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(uid)
+            .collection('pedidos')
+            .add(orderData);
+
+        // 🔥 Vaciar carrito después de guardar pedido
+        final carrito = FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(uid)
+            .collection('carrito');
+
+        final snapshot = await carrito.get();
+        for (var doc in snapshot.docs) {
+          await doc.reference.delete();
+        }
+
+        Future.delayed(Duration(seconds: 2), () {
+          showDialog(
+            context: context,
+            builder:
+                (_) => AlertDialog(
+                  title: Text('¡Compra exitosa!'),
+                  content: Text('Gracias por tu compra.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.popUntil(context, (route) => route.isFirst);
+                      },
+                      child: Text('Volver al inicio'),
+                    ),
+                  ],
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.popUntil(context, (route) => route.isFirst);
-                    },
-                    child: Text('Volver al inicio'),
-                  ),
-                ],
-              ),
-        );
-      });
+          );
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
     }
   }
 
@@ -141,7 +192,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Resumen de la orden
               Text(
                 'Resumen de la orden',
                 style: TextStyle(
@@ -160,38 +210,31 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   padding: const EdgeInsets.all(12.0),
                   child: Column(
                     children: [
-                      Row(
-                        children: [
-                          Image.asset(
-                            'assets/imagenes/mona1.webp',
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
+                      for (var product in widget.cartProducts)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            children: [
+                              Image.network(
+                                product['imagen'],
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (context, error, stackTrace) =>
+                                        Icon(Icons.broken_image, size: 50),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(child: Text(product['nombre'])),
+                              Text('${product['precio']} MXN'),
+                            ],
                           ),
-                          SizedBox(width: 10),
-                          Expanded(child: Text('Figura Anime')),
-                          Text('1500 MXN'),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Image.asset(
-                            'assets/imagenes/videojuego.webp',
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(child: Text('Figura Videojuego')),
-                          Text('2200 MXN'),
-                        ],
-                      ),
+                        ),
                       Divider(),
                       Align(
                         alignment: Alignment.centerRight,
                         child: Text(
-                          'Total: 3700 MXN',
+                          'Total: ${totalAmount.toStringAsFixed(2)} MXN',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.deepPurple,
@@ -203,8 +246,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
               ),
               SizedBox(height: 24),
-
-              // Información de envío
               Text(
                 'Información de envío',
                 style: TextStyle(
@@ -245,8 +286,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 controller: _postalCodeController,
                 inputType: TextInputType.number,
               ),
-
-              // Método de pago
               Text(
                 'Método de pago',
                 style: TextStyle(
@@ -279,15 +318,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   fillColor: Colors.white,
                 ),
               ),
-
               SizedBox(height: 16),
-
-              // Campos dinámicos según método de pago
               buildPaymentFields(),
-
               SizedBox(height: 24),
-
-              // Botón confirmar compra
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
