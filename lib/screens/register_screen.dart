@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -12,27 +14,44 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _register() {
+  void _register() async {
     if (_formKey.currentState!.validate()) {
-      final username = _usernameController.text;
-      final email = _emailController.text;
-      final password = _passwordController.text;
+      final username = _usernameController.text.trim();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
 
-      print('Usuario: $username');
-      print('Email: $email');
-      print('Password: $password');
+      try {
+        // Mostrar SnackBar de carga
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Registrando usuario...')));
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Registrando usuario...')));
+        // 1. Crear cuenta en Firebase Auth
+        UserCredential userCredential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(email: email, password: password);
 
-      // Simulación de registro exitoso
-      Future.delayed(Duration(seconds: 1), () {
+        final uid = userCredential.user!.uid;
+
+        // 2. Guardar datos en Firestore
+        await FirebaseFirestore.instance.collection('usuarios').doc(uid).set({
+          'nombre': username,
+          'correo': email,
+          'fechaRegistro': FieldValue.serverTimestamp(),
+        });
+
+        // Navegar al Login (o Home)
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => LoginPage()),
         );
-      });
+      } on FirebaseAuthException catch (e) {
+        String errorMsg = 'Error al registrar: ${e.message}';
+        print(errorMsg);
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMsg)));
+      }
     }
   }
 
@@ -52,7 +71,7 @@ class _RegisterPageState extends State<RegisterPage> {
             key: _formKey,
             child: Column(
               children: [
-                // Imagen de registro (opcional)
+                // Imagen de registro
                 CircleAvatar(
                   radius: 50,
                   backgroundImage: AssetImage('assets/imagenes/logo.png'),

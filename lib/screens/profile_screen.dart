@@ -25,7 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _saveProfile() {
     if (_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Perfil actualizado correctamente 🎉')),
+        SnackBar(content: Text('Perfil actualizado correctamente')),
       );
     }
   }

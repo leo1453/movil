@@ -12,7 +12,6 @@ class FavoritesScreen extends StatelessWidget {
       'price': '2200 MXN',
       'image': 'assets/imagenes/videojuego.webp',
     },
-    // Puedes agregar más productos favoritos aquí si quieres simular más
   ];
 
   @override

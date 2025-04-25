@@ -7,6 +7,7 @@ import 'login_screen.dart';
 import 'order_history_screen.dart';
 import 'favorites_screen.dart';
 import 'profile_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -26,10 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
       'price': '2200 MXN',
       'image': 'assets/imagenes/videojuego.webp',
     },
-    // Puedes seguir agregando más productos aquí
   ];
 
-  // Lista de favoritos dinámicos
   List<Map<String, String>> favoriteProducts = [];
 
   void toggleFavorite(Map<String, String> product) {
@@ -247,7 +246,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Cerrar sesión',
                 style: TextStyle(color: Colors.deepPurple),
               ),
-              onTap: () {
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => LoginPage()),

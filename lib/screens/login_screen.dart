@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:proyecto/screens/register_screen.dart';
 import 'home_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -12,24 +13,41 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _login() {
+  void _login() async {
     if (_formKey.currentState!.validate()) {
-      final email = _emailController.text;
-      final password = _passwordController.text;
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
 
-      print('Email: $email');
-      print('Password: $password');
+      try {
+        // Mostrar SnackBar de carga
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Iniciando sesión...')));
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Iniciando sesión...')));
+        // 1. Intentar iniciar sesión con Firebase Auth
+        UserCredential userCredential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(email: email, password: password);
 
-      Future.delayed(Duration(seconds: 1), () {
+        // 2. Si todo sale bien, navegar al Home
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
         );
-      });
+      } on FirebaseAuthException catch (e) {
+        // Mostrar error específico
+        String errorMsg;
+        if (e.code == 'user-not-found') {
+          errorMsg = 'No existe un usuario con ese correo.';
+        } else if (e.code == 'wrong-password') {
+          errorMsg = 'Contraseña incorrecta.';
+        } else {
+          errorMsg = 'Error al iniciar sesión. ${e.message}';
+        }
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMsg)));
+      }
     }
   }
 
@@ -45,7 +63,7 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Imagen del logo (sin fondo morado, más grande)
+                // Imagen del logo
                 ClipOval(
                   child: Image.asset(
                     'assets/imagenes/logo.png',

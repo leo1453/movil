@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'payment_screen.dart'; // 👈 Asegúrate de crear y tener este archivo
+import 'payment_screen.dart';
 
 class CartScreen extends StatelessWidget {
   @override

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'cart_screen.dart'; // 👈 Importa tu CartScreen
+import 'cart_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   @override
@@ -7,8 +7,8 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  int _cartItemCount = 0; // Contador del carrito
-  int _quantity = 1; // Cantidad seleccionada por el usuario
+  int _cartItemCount = 0;
+  int _quantity = 1;
 
   void _addToCart() {
     setState(() {
@@ -36,7 +36,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               IconButton(
                 icon: Icon(Icons.shopping_cart),
                 onPressed: () {
-                  // 👇 Redirección al carrito existente
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => CartScreen()),
