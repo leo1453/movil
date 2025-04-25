@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'cart_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Map<String, dynamic> productData;
 
-  ProductDetailScreen({required this.productData}); // 👈 Recibimos el producto
+  ProductDetailScreen({required this.productData});
 
   @override
   _ProductDetailScreenState createState() => _ProductDetailScreenState();
@@ -14,19 +16,40 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _cartItemCount = 0;
   int _quantity = 1;
 
-  void _addToCart() {
-    setState(() {
-      _cartItemCount += _quantity;
-    });
+  void _addToCart() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .collection('carrito')
+          .add({
+            'nombre': widget.productData['nombre'],
+            'precio': widget.productData['precio'],
+            'imagen': widget.productData['imagen'],
+            'cantidad': _quantity,
+            'fechaAgregado': FieldValue.serverTimestamp(),
+          });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$_quantity producto(s) agregado(s) al carrito')),
-    );
+      setState(() {
+        _cartItemCount += _quantity;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$_quantity producto(s) agregado(s) al carrito'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Debes iniciar sesión para agregar al carrito')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final product = widget.productData; // 👈 Accedemos al producto recibido
+    final product = widget.productData;
 
     return Scaffold(
       appBar: AppBar(
@@ -73,7 +96,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagen
             ClipRRect(
               borderRadius: BorderRadius.circular(15),
               child: Container(
@@ -92,15 +114,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
             SizedBox(height: 16),
-
-            // Nombre
             Text(
               product['nombre'] ?? 'Producto',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
-
-            // Precio
             Text(
               'Precio: ${product['precio']} MXN',
               style: TextStyle(
@@ -110,15 +128,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ),
             ),
             SizedBox(height: 16),
-
-            // Descripción
             Text(
               product['descripcion'] ?? 'Sin descripción.',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 24),
-
-            // Selector de cantidad
             Text(
               'Cantidad:',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -148,8 +162,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               ],
             ),
             SizedBox(height: 24),
-
-            // Botón agregar al carrito
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
