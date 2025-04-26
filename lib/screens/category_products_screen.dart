@@ -37,27 +37,26 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         backgroundColor: Colors.deepPurple,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream:
-            FirebaseFirestore.instance
-                .collection('productos')
-                .where('categoria', isEqualTo: widget.categoriaSeleccionada)
-                .snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('productos')
+            .where('categoria', isEqualTo: widget.categoriaSeleccionada)
+            .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
 
-          final productos = snapshot.data!.docs;
-
-          if (productos.isEmpty) {
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(child: Text('No hay productos en esta categoría.'));
           }
+
+          final productos = snapshot.data!.docs;
 
           return GridView.builder(
             padding: EdgeInsets.all(8),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 0.75,
+              childAspectRatio: 0.6,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
             ),
@@ -66,17 +65,19 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
               final producto = productos[index];
               final data = producto.data() as Map<String, dynamic>;
 
+              // Obtener imagen de forma segura
+              final imagenUrl = _obtenerImagenPrincipal(data);
+
               return ProductCard(
                 title: data['nombre'] ?? '',
                 price: '${data['precio']} MXN',
-                image: data['imagen'] ?? '',
+                image: imagenUrl,
                 isFavorite: isFavorite(data),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder:
-                          (context) => ProductDetailScreen(productData: data),
+                      builder: (context) => ProductDetailScreen(productData: data),
                     ),
                   );
                 },
@@ -89,5 +90,15 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         },
       ),
     );
+  }
+
+  String _obtenerImagenPrincipal(Map<String, dynamic> data) {
+    if (data['imagenes'] != null && data['imagenes'] is List && data['imagenes'].isNotEmpty) {
+      return data['imagenes'][0]; // Usa la primera imagen si es lista
+    } else if (data['imagen'] != null && data['imagen'].toString().isNotEmpty) {
+      return data['imagen']; // Usa campo simple "imagen" si existe
+    } else {
+      return ''; // Si no hay imagen
+    }
   }
 }

@@ -12,10 +12,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
   final TextEditingController _precioController = TextEditingController();
-  final TextEditingController _imagenController = TextEditingController();
   final TextEditingController _stockController = TextEditingController();
+  final TextEditingController _imagen1Controller = TextEditingController();
+  final TextEditingController _imagen2Controller = TextEditingController();
+  final TextEditingController _imagen3Controller = TextEditingController();
+  final TextEditingController _marcaController = TextEditingController();
+  final TextEditingController _modeloController = TextEditingController();
+  final TextEditingController _materialController = TextEditingController();
+  final TextEditingController _colorController = TextEditingController();
+  final TextEditingController _dimensionesController = TextEditingController();
+  final TextEditingController _pesoController = TextEditingController();
+  final TextEditingController _tiempoEntregaController = TextEditingController();
 
   String? _selectedCategory;
+  String? _selectedCondition;
+  String? _selectedWarranty;
 
   void _guardarProducto() async {
     if (_formKey.currentState!.validate()) {
@@ -24,9 +35,22 @@ class _AddProductScreenState extends State<AddProductScreen> {
           'nombre': _nombreController.text.trim(),
           'descripcion': _descripcionController.text.trim(),
           'precio': double.parse(_precioController.text.trim()),
-          'imagen': _imagenController.text.trim(),
           'categoria': _selectedCategory,
           'stock': int.parse(_stockController.text.trim()),
+          'imagenes': [
+            _imagen1Controller.text.trim(),
+            _imagen2Controller.text.trim(),
+            _imagen3Controller.text.trim(),
+          ],
+          'marca': _marcaController.text.trim(),
+          'modelo': _modeloController.text.trim(),
+          'material': _materialController.text.trim(),
+          'color': _colorController.text.trim(),
+          'dimensiones': _dimensionesController.text.trim(),
+          'peso': _pesoController.text.trim(),
+          'condicion': _selectedCondition,
+          'garantia': _selectedWarranty,
+          'tiempoEntrega': _tiempoEntregaController.text.trim(),
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -35,9 +59,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
         Navigator.pop(context);
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error al agregar: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al agregar: $e')),
+        );
       }
     }
   }
@@ -45,6 +69,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text('Agregar Producto'),
         backgroundColor: Colors.deepPurple,
@@ -55,84 +80,135 @@ class _AddProductScreenState extends State<AddProductScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              TextFormField(
-                controller: _nombreController,
-                decoration: InputDecoration(labelText: 'Nombre del producto'),
-                validator:
-                    (value) => value!.isEmpty ? 'Campo obligatorio' : null,
-              ),
-              SizedBox(height: 8),
-              TextFormField(
-                controller: _descripcionController,
-                decoration: InputDecoration(labelText: 'Descripción'),
-                validator:
-                    (value) => value!.isEmpty ? 'Campo obligatorio' : null,
-              ),
-              SizedBox(height: 8),
-              TextFormField(
-                controller: _precioController,
-                decoration: InputDecoration(labelText: 'Precio'),
-                keyboardType: TextInputType.number,
-                validator:
-                    (value) => value!.isEmpty ? 'Campo obligatorio' : null,
-              ),
-              SizedBox(height: 8),
-              TextFormField(
-                controller: _imagenController,
-                decoration: InputDecoration(labelText: 'URL de la Imagen'),
-                validator:
-                    (value) => value!.isEmpty ? 'Campo obligatorio' : null,
-              ),
-              SizedBox(height: 8),
-
-              DropdownButtonFormField<String>(
+              _buildSectionTitle('Información básica'),
+              _buildTextField(_nombreController, 'Nombre del producto'),
+              _buildTextField(_descripcionController, 'Descripción'),
+              _buildTextField(_precioController, 'Precio', keyboardType: TextInputType.number),
+              _buildTextField(_stockController, 'Stock disponible', keyboardType: TextInputType.number),
+              _buildDropdownField(
+                label: 'Categoría',
                 value: _selectedCategory,
-                items:
-                    ['Anime', 'Videojuegos', 'Cómics', 'Películas'].map((
-                      categoria,
-                    ) {
-                      return DropdownMenuItem(
-                        value: categoria,
-                        child: Text(categoria),
-                      );
-                    }).toList(),
+                items: ['Anime', 'Videojuegos', 'Cómics', 'Películas'],
                 onChanged: (value) {
                   setState(() {
                     _selectedCategory = value;
                   });
                 },
-                decoration: InputDecoration(
-                  labelText: 'Categoría',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-                validator:
-                    (value) =>
-                        value == null ? 'Selecciona una categoría' : null,
               ),
+              Divider(height: 32),
 
-              SizedBox(height: 8),
-              TextFormField(
-                controller: _stockController,
-                decoration: InputDecoration(labelText: 'Stock disponible'),
-                keyboardType: TextInputType.number,
-                validator:
-                    (value) => value!.isEmpty ? 'Campo obligatorio' : null,
+              _buildSectionTitle('Imágenes del producto (URLs)'),
+              _buildTextField(_imagen1Controller, 'Imagen 1 (URL)'),
+              _buildTextField(_imagen2Controller, 'Imagen 2 (URL)'),
+              _buildTextField(_imagen3Controller, 'Imagen 3 (URL)'),
+              Divider(height: 32),
+
+              _buildSectionTitle('Características físicas'),
+              _buildTextField(_marcaController, 'Marca'),
+              _buildTextField(_modeloController, 'Modelo'),
+              _buildTextField(_materialController, 'Material'),
+              _buildTextField(_colorController, 'Color principal'),
+              _buildTextField(_dimensionesController, 'Dimensiones (alto x ancho x profundidad)'),
+              _buildTextField(_pesoController, 'Peso (kg)'),
+              Divider(height: 32),
+
+              _buildSectionTitle('Detalles adicionales'),
+              _buildDropdownField(
+                label: 'Condición',
+                value: _selectedCondition,
+                items: ['Nuevo', 'Usado'],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCondition = value;
+                  });
+                },
               ),
+              _buildDropdownField(
+                label: 'Garantía',
+                value: _selectedWarranty,
+                items: ['Sí', 'No'],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedWarranty = value;
+                  });
+                },
+              ),
+              _buildTextField(_tiempoEntregaController, 'Tiempo estimado de entrega (días)'),
+
               SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _guardarProducto,
-                child: Text('Guardar Producto'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
+                child: Text('Guardar Producto', style: TextStyle(fontSize: 16)),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label, {
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        keyboardType: keyboardType,
+        validator: (value) => value!.isEmpty ? 'Campo obligatorio' : null,
+      ),
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        items: items.map((item) {
+          return DropdownMenuItem(value: item, child: Text(item));
+        }).toList(),
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        validator: (value) => value == null ? 'Selecciona una opción' : null,
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.deepPurple,
         ),
       ),
     );

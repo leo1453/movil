@@ -7,6 +7,7 @@ class ProductCard extends StatefulWidget {
   final bool isFavorite;
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
+  final VoidCallback? onAddToCart;
 
   ProductCard({
     required this.title,
@@ -15,6 +16,7 @@ class ProductCard extends StatefulWidget {
     required this.onTap,
     required this.isFavorite,
     required this.onFavoriteToggle,
+    this.onAddToCart,
   });
 
   @override
@@ -26,25 +28,21 @@ class _ProductCardState extends State<ProductCard>
   double _scale = 1.0;
 
   void _onTapDown(TapDownDetails details) {
-    setState(() {
-      _scale = 0.96;
-    });
+    setState(() => _scale = 0.96);
   }
 
   void _onTapUp(TapUpDetails details) {
-    setState(() {
-      _scale = 1.0;
-    });
+    setState(() => _scale = 1.0);
   }
 
   void _onTapCancel() {
-    setState(() {
-      _scale = 1.0;
-    });
+    setState(() => _scale = 1.0);
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool hasValidImage = widget.image.trim().startsWith('http');
+
     return GestureDetector(
       onTap: widget.onTap,
       onTapDown: _onTapDown,
@@ -59,13 +57,12 @@ class _ProductCardState extends State<ProductCard>
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.deepPurple.shade100, width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(
-                      _scale == 1.0 ? 0.08 : 0.18,
-                    ),
-                    blurRadius: 10,
+                    color: Colors.deepPurple.withOpacity(0.1),
+                    blurRadius: 8,
                     spreadRadius: 2,
                     offset: Offset(2, 4),
                   ),
@@ -75,54 +72,69 @@ class _ProductCardState extends State<ProductCard>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Imagen
-                  Flexible(
-                    flex: 3,
+                  Expanded(
+                    flex: 6,
                     child: ClipRRect(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(18),
-                      ),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                       child: Container(
                         color: Colors.grey[100],
-                        width: double.infinity,
-                        child: Image.network(
-                          widget.image,
-                          fit: BoxFit.contain,
-                          errorBuilder:
-                              (context, error, stackTrace) =>
-                                  Icon(Icons.broken_image, size: 50),
-                        ),
+                        child: hasValidImage
+                            ? Image.network(
+                                widget.image,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Center(child: Icon(Icons.broken_image, size: 40, color: Colors.grey)),
+                              )
+                            : Center(
+                                child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                              ),
                       ),
                     ),
                   ),
-                  SizedBox(height: 6),
-                  Flexible(
-                    flex: 1,
+                  // Nombre, precio, carrito
+                  Expanded(
+                    flex: 4,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10.0,
-                        vertical: 6.0,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             widget.title,
                             style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                               color: Colors.black87,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          SizedBox(height: 4),
-                          Text(
-                            widget.price,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.deepPurple,
-                            ),
+                          //SizedBox(height: 4),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.price,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.deepPurple,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              SizedBox(
+                                width: 40, // espacio fijo para el botón
+                                child: IconButton(
+                                  icon: Icon(Icons.add_shopping_cart),
+                                  color: Colors.deepPurple,
+                                  iconSize: 20,
+                                  onPressed: widget.onAddToCart,
+                                  tooltip: 'Agregar al carrito',
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -131,18 +143,29 @@ class _ProductCardState extends State<ProductCard>
                 ],
               ),
             ),
+            // Corazón
             Positioned(
-              top: 10,
-              right: 10,
+              top: 8,
+              right: 8,
               child: GestureDetector(
                 onTap: widget.onFavoriteToggle,
-                child: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  radius: 18,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 6,
+                        offset: Offset(2, 2),
+                      ),
+                    ],
+                  ),
+                  padding: EdgeInsets.all(6),
                   child: Icon(
                     widget.isFavorite ? Icons.favorite : Icons.favorite_border,
                     color: widget.isFavorite ? Colors.red : Colors.grey,
-                    size: 22,
+                    size: 20,
                   ),
                 ),
               ),

@@ -15,6 +15,7 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _cartItemCount = 0;
   int _quantity = 1;
+  int _currentImageIndex = 0;
 
   void _addToCart() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -24,21 +25,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           .doc(user.uid)
           .collection('carrito')
           .add({
-            'nombre': widget.productData['nombre'],
-            'precio': widget.productData['precio'],
-            'imagen': widget.productData['imagen'],
-            'cantidad': _quantity,
-            'fechaAgregado': FieldValue.serverTimestamp(),
-          });
+        'nombre': widget.productData['nombre'],
+        'precio': widget.productData['precio'],
+        'imagen': _obtenerImagenPrincipal(widget.productData),
+        'cantidad': _quantity,
+        'fechaAgregado': FieldValue.serverTimestamp(),
+      });
 
       setState(() {
         _cartItemCount += _quantity;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$_quantity producto(s) agregado(s) al carrito'),
-        ),
+        SnackBar(content: Text('$_quantity producto(s) agregado(s) al carrito')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -50,8 +49,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final product = widget.productData;
+    final List<String> imagenes = _obtenerListaImagenes(product['imagenes'] ?? product['imagen']);
 
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(
           product['nombre'] ?? 'Producto',
@@ -96,92 +97,211 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Container(
-                color: Colors.grey[200],
+            if (imagenes.isNotEmpty)
+              Column(
+                children: [
+                  SizedBox(
+                    height: 300,
+                    child: imagenes.length == 1
+                        ? Center(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                color: Colors.white,
+                                constraints: BoxConstraints(
+                                  maxWidth: 250,
+                                ),
+                                child: Image.network(
+                                  imagenes[0],
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(Icons.broken_image, size: 60, color: Colors.grey);
+                                  },
+                                ),
+                              ),
+                            ),
+                          )
+                        : PageView.builder(
+                            itemCount: imagenes.length,
+                            onPageChanged: (index) {
+                              setState(() {
+                                _currentImageIndex = index;
+                              });
+                            },
+                            itemBuilder: (context, index) {
+                              return Center(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    color: Colors.white,
+                                    constraints: BoxConstraints(
+                                      maxWidth: 250,
+                                    ),
+                                    child: Image.network(
+                                      imagenes[index],
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Icon(Icons.broken_image, size: 60, color: Colors.grey);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  if (imagenes.length > 1)
+                    SizedBox(height: 12),
+                  if (imagenes.length > 1)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(imagenes.length, (index) {
+                        return Container(
+                          margin: EdgeInsets.symmetric(horizontal: 4),
+                          width: _currentImageIndex == index ? 12 : 8,
+                          height: _currentImageIndex == index ? 12 : 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _currentImageIndex == index ? Colors.deepPurple : Colors.grey,
+                          ),
+                        );
+                      }),
+                    ),
+                ],
+              )
+            else
+              Container(
                 height: 300,
-                width: double.infinity,
                 alignment: Alignment.center,
-                child: Image.network(
-                  product['imagen'] ?? '',
-                  fit: BoxFit.contain,
-                  width: 250,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(Icons.broken_image, size: 50);
-                  },
-                ),
+                child: Icon(Icons.broken_image, size: 60, color: Colors.grey),
               ),
-            ),
-            SizedBox(height: 16),
+            SizedBox(height: 24),
             Text(
               product['nombre'] ?? 'Producto',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             SizedBox(height: 8),
             Text(
-              'Precio: ${product['precio']} MXN',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.deepPurple,
-                fontWeight: FontWeight.bold,
-              ),
+              '${product['precio']} MXN',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple),
             ),
             SizedBox(height: 16),
             Text(
-              product['descripcion'] ?? 'Sin descripción.',
-              style: TextStyle(fontSize: 16),
+              product['descripcion'] ?? 'Sin descripción disponible.',
+              style: TextStyle(fontSize: 16, color: Colors.black87, height: 1.4),
             ),
-            SizedBox(height: 24),
+            SizedBox(height: 30),
+            _buildSectionTitle('Características'),
+            _buildDetailRow('Marca', product['marca']),
+            _buildDetailRow('Modelo', product['modelo']),
+            _buildDetailRow('Material', product['material']),
+            _buildDetailRow('Color', product['color']),
+            _buildDetailRow('Dimensiones', product['dimensiones']),
+            _buildDetailRow('Peso', product['peso']),
+            SizedBox(height: 30),
+            _buildSectionTitle('Detalles adicionales'),
+            _buildDetailRow('Condición', product['condicion']),
+            _buildDetailRow('Garantía', product['garantia']),
+            _buildDetailRow('Tiempo estimado de entrega', '${product['tiempoEntrega']} días'),
+            SizedBox(height: 30),
             Text(
               'Cantidad:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
             ),
+            SizedBox(height: 8),
             Row(
               children: [
-                IconButton(
-                  icon: Icon(Icons.remove),
-                  onPressed:
-                      _quantity > 1
-                          ? () {
-                            setState(() {
-                              _quantity--;
-                            });
-                          }
-                          : null,
+                ElevatedButton(
+                  onPressed: _quantity > 1
+                      ? () {
+                          setState(() {
+                            _quantity--;
+                          });
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    shape: CircleBorder(),
+                    padding: EdgeInsets.all(12),
+                  ),
+                  child: Icon(Icons.remove, size: 20, color: Colors.white),
                 ),
-                Text('$_quantity', style: TextStyle(fontSize: 16)),
-                IconButton(
-                  icon: Icon(Icons.add),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('$_quantity', style: TextStyle(fontSize: 18)),
+                ),
+                ElevatedButton(
                   onPressed: () {
                     setState(() {
                       _quantity++;
                     });
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    shape: CircleBorder(),
+                    padding: EdgeInsets.all(12),
+                  ),
+                  child: Icon(Icons.add, size: 20, color: Colors.white),
                 ),
               ],
             ),
-            SizedBox(height: 24),
+            SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
-                  padding: EdgeInsets.symmetric(vertical: 16),
+                  padding: EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
+                icon: Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                label: Text('Agregar al carrito', style: TextStyle(color: Colors.white, fontSize: 18)),
                 onPressed: _addToCart,
-                child: Text(
-                  'Agregar al carrito',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  List<String> _obtenerListaImagenes(dynamic imagenes) {
+    if (imagenes is List) {
+      return imagenes.whereType<String>().toList();
+    } else if (imagenes is String && imagenes.trim().isNotEmpty) {
+      return [imagenes];
+    } else {
+      return [];
+    }
+  }
+
+  String _obtenerImagenPrincipal(Map<String, dynamic> data) {
+    if (data['imagenes'] != null && data['imagenes'] is List && data['imagenes'].isNotEmpty) {
+      return data['imagenes'][0];
+    } else if (data['imagen'] != null && data['imagen'].toString().isNotEmpty) {
+      return data['imagen'];
+    } else {
+      return '';
+    }
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, dynamic value) {
+    if (value == null || (value is String && value.isEmpty)) return SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Text('$label: $value', style: TextStyle(fontSize: 16)),
     );
   }
 }

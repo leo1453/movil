@@ -15,6 +15,7 @@ class OrderDetailScreen extends StatelessWidget {
     final fecha = (orderData['fecha'] as Timestamp).toDate();
 
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(
           'Detalle del pedido',
@@ -27,36 +28,26 @@ class OrderDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            // Fecha
-            Text(
-              'Fecha del pedido:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
-              ),
-            ),
+            // Fecha del pedido
+            _buildSectionTitle('Fecha del pedido'),
             Text(
               '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}',
+              style: TextStyle(fontSize: 16),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: 24),
 
             // Productos
-            Text(
-              'Productos:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
-              ),
-            ),
+            _buildSectionTitle('Productos'),
             SizedBox(height: 8),
             ...productos.map<Widget>((p) {
               return Card(
+                margin: EdgeInsets.symmetric(vertical: 6),
+                elevation: 3,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                elevation: 3,
-                margin: EdgeInsets.symmetric(vertical: 8),
                 child: ListTile(
+                  contentPadding: EdgeInsets.all(12),
                   leading: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
@@ -64,59 +55,99 @@ class OrderDetailScreen extends StatelessWidget {
                       width: 50,
                       height: 50,
                       fit: BoxFit.cover,
-                      errorBuilder:
-                          (context, error, stackTrace) =>
-                              Icon(Icons.broken_image),
+                      errorBuilder: (context, error, stackTrace) =>
+                          Icon(Icons.broken_image),
                     ),
                   ),
-                  title: Text(p['nombre'] ?? ''),
+                  title: Text(
+                    p['nombre'] ?? '',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   subtitle: Text('Cantidad: ${p['cantidad']}'),
-                  trailing: Text('${p['precio']} MXN'),
+                  trailing: Text(
+                    '${p['precio']} MXN',
+                    style: TextStyle(
+                      color: Colors.deepPurple,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               );
             }).toList(),
-
-            Divider(),
+            SizedBox(height: 24),
 
             // Total
-            SizedBox(height: 8),
+            _buildSectionTitle('Total del pedido'),
             Text(
-              'Total:',
+              '${total.toStringAsFixed(2)} MXN',
               style: TextStyle(
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.deepPurple,
               ),
             ),
-            Text('${total.toStringAsFixed(2)} MXN'),
-            SizedBox(height: 16),
+            SizedBox(height: 24),
 
             // Método de pago
+            _buildSectionTitle('Método de pago'),
             Text(
-              'Método de pago:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
-              ),
+              metodoPago,
+              style: TextStyle(fontSize: 16),
             ),
-            Text(metodoPago),
-            SizedBox(height: 16),
+            SizedBox(height: 24),
 
             // Dirección de envío
-            Text(
-              'Dirección de envío:',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
+            _buildSectionTitle('Dirección de envío'),
+            Card(
+              margin: EdgeInsets.only(top: 8),
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      direccion['nombre'] ?? '',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      direccion['direccion'] ?? '',
+                      style: TextStyle(fontSize: 15),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '${direccion['ciudad'] ?? ''}, CP: ${direccion['codigoPostal'] ?? ''}',
+                      style: TextStyle(fontSize: 15),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Tel: ${direccion['telefono'] ?? ''}',
+                      style: TextStyle(fontSize: 15),
+                    ),
+                  ],
+                ),
               ),
             ),
-            Text('${direccion['nombre'] ?? ''}'),
-            Text('${direccion['direccion'] ?? ''}'),
-            Text(
-              '${direccion['ciudad'] ?? ''}, CP: ${direccion['codigoPostal'] ?? ''}',
-            ),
-            Text('Tel: ${direccion['telefono'] ?? ''}'),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.deepPurple,
       ),
     );
   }
