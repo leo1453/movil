@@ -164,7 +164,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ProductDetailScreen(productData: data),
+                            builder: (context) => ProductDetailScreen(productData: {
+                              'id': producto.id,
+                              ...data,
+                            }),
                           ),
                         );
                       },

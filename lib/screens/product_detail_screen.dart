@@ -17,203 +17,259 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _cartItemCount = 0;
   int _quantity = 1;
   int _currentImageIndex = 0;
-  final List<String> comentarios = [
-    '¡Excelente calidad, me encantó!',
-    'Muy bonito, llegó rápido.',
-    'Lo recomiendo totalmente.',
-    'El producto es igual que en la foto.',
-    'Me hubiera gustado otro empaque, pero está bien.',
-    'Perfecto para regalar.',
-    'Atención rápida y buena calidad.',
-  ];
-
-  late List<String> comentariosAleatorios;
   final TextEditingController _comentarioController = TextEditingController();
+  int _rating = 5;
+  List<Map<String, dynamic>> _comentariosLocal = [];
 
   @override
-  void initState() {
-    super.initState();
-    comentariosAleatorios = _obtenerComentariosAleatorios();
-  }
+ Widget build(BuildContext context) {
+  final product = widget.productData;
+  final List<String> imagenes = _obtenerListaImagenes(product['imagenes'] ?? product['imagen']);
 
-  void _addToCart() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(user.uid)
-          .collection('carrito')
-          .add({
-        'nombre': widget.productData['nombre'],
-        'precio': widget.productData['precio'],
-        'imagen': _obtenerImagenPrincipal(widget.productData),
-        'cantidad': _quantity,
-        'fechaAgregado': FieldValue.serverTimestamp(),
-      });
-
-      setState(() {
-        _cartItemCount += _quantity;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$_quantity producto(s) agregado(s) al carrito')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Debes iniciar sesión para agregar al carrito')),
-      );
-    }
-  }
-
-  void _agregarComentario() {
-    final texto = _comentarioController.text.trim();
-    if (texto.isNotEmpty) {
-      setState(() {
-        comentariosAleatorios.insert(0, texto);
-        _comentarioController.clear();
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final product = widget.productData;
-    final List<String> imagenes = _obtenerListaImagenes(product['imagenes'] ?? product['imagen']);
-
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text(product['nombre'] ?? 'Producto', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.deepPurple,
-        iconTheme: IconThemeData(color: Colors.white),
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: Icon(Icons.shopping_cart),
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => CartScreen()));
-                },
-              ),
-              if (_cartItemCount > 0)
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: Container(
-                    padding: EdgeInsets.all(4),
-                    decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                    child: Text('$_cartItemCount', style: TextStyle(color: Colors.white, fontSize: 12)),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  return Scaffold(
+    backgroundColor: Colors.grey[100],
+    appBar: AppBar(
+      title: Text(product['nombre'] ?? 'Producto', style: TextStyle(color: Colors.white)),
+      backgroundColor: Colors.deepPurple,
+      iconTheme: IconThemeData(color: Colors.white),
+      actions: [
+        Stack(
           children: [
-            _buildImagenes(imagenes),
-            SizedBox(height: 24),
-            Text(product['nombre'] ?? 'Producto', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87)),
-            SizedBox(height: 8),
-            Row(children: List.generate(5, (index) => Icon(Icons.star, size: 20, color: Colors.amber))),
-            SizedBox(height: 8),
-            Text('${product['precio']} MXN', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
-            SizedBox(height: 16),
-            Text(product['descripcion'] ?? 'Sin descripción disponible.', style: TextStyle(fontSize: 16, color: Colors.black87, height: 1.4)),
-            SizedBox(height: 30),
-            _buildSectionTitle('Características'),
-            _buildDetailRow('Marca', product['marca']),
-            _buildDetailRow('Modelo', product['modelo']),
-            _buildDetailRow('Material', product['material']),
-            _buildDetailRow('Color', product['color']),
-            _buildDetailRow('Dimensiones', product['dimensiones']),
-            _buildDetailRow('Peso', product['peso']),
-            SizedBox(height: 30),
-            _buildSectionTitle('Detalles adicionales'),
-            _buildDetailRow('Condición', product['condicion']),
-            _buildDetailRow('Garantía', product['garantia']),
-            _buildDetailRow('Tiempo estimado de entrega', '${product['tiempoEntrega']} días'),
-            SizedBox(height: 30),
-            Text('Cantidad:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-            SizedBox(height: 8),
-            _buildCantidadSelector(),
-            SizedBox(height: 30),
-            _buildAgregarAlCarrito(),
-            SizedBox(height: 30),
-            Divider(),
-            _buildSectionTitle('Opiniones de clientes'),
-            ...comentariosAleatorios.map((comentario) => Card(
-              margin: EdgeInsets.symmetric(vertical: 6),
-              child: ListTile(
-                leading: Icon(Icons.person_outline, color: Colors.deepPurple),
-                title: Text(comentario, style: TextStyle(fontSize: 15)),
-              ),
-            )).toList(),
-            SizedBox(height: 20),
-            TextField(
-              controller: _comentarioController,
-              decoration: InputDecoration(
-                hintText: 'Escribe tu opinión...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.send, color: Colors.deepPurple),
-                  onPressed: _agregarComentario,
+            IconButton(
+              icon: Icon(Icons.shopping_cart),
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => CartScreen()));
+              },
+            ),
+            if (_cartItemCount > 0)
+              Positioned(
+                right: 4,
+                top: 4,
+                child: Container(
+                  padding: EdgeInsets.all(4),
+                  decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  child: Text('$_cartItemCount', style: TextStyle(color: Colors.white, fontSize: 12)),
                 ),
               ),
-            ),
           ],
         ),
+      ],
+    ),
+    body: SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildImagenes(imagenes),
+          SizedBox(height: 24),
+          Text(product['nombre'] ?? 'Producto', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+          SizedBox(height: 8),
+          Row(children: List.generate(5, (index) => Icon(Icons.star, size: 20, color: Colors.amber))),
+          SizedBox(height: 8),
+          Text('${product['precio']} MXN', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+          SizedBox(height: 16),
+          Text(product['descripcion'] ?? 'Sin descripción disponible.', style: TextStyle(fontSize: 16, height: 1.4)),
+          SizedBox(height: 30),
+          _buildSectionTitle('Características'),
+          _buildDetailRow('Marca', product['marca']),
+          _buildDetailRow('Modelo', product['modelo']),
+          _buildDetailRow('Material', product['material']),
+          _buildDetailRow('Color', product['color']),
+          _buildDetailRow('Dimensiones', product['dimensiones']),
+          _buildDetailRow('Peso', product['peso']),
+          SizedBox(height: 30),
+          _buildSectionTitle('Compra'),
+          _buildCantidadSelector(),
+          SizedBox(height: 20),
+          _buildAgregarAlCarrito(),
+          SizedBox(height: 30),
+          Divider(thickness: 1.5),
+          _buildSectionTitle('Opiniones de clientes'),
+          _buildAgregarComentarioSection(),
+          SizedBox(height: 10),
+          _buildComentariosSection(),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildImagenes(List<String> imagenes) {
     if (imagenes.isEmpty) {
       return Container(height: 300, alignment: Alignment.center, child: Icon(Icons.broken_image, size: 60, color: Colors.grey));
     }
-    return Column(
-      children: [
-        SizedBox(
-          height: 300,
-          child: imagenes.length == 1
-              ? _buildImagen(imagenes[0])
-              : PageView.builder(
-                  itemCount: imagenes.length,
-                  onPageChanged: (index) => setState(() => _currentImageIndex = index),
-                  itemBuilder: (context, index) => _buildImagen(imagenes[index]),
-                ),
-        ),
-        if (imagenes.length > 1)
-          SizedBox(height: 12),
-        if (imagenes.length > 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(imagenes.length, (index) => Container(
-              margin: EdgeInsets.symmetric(horizontal: 4),
-              width: _currentImageIndex == index ? 12 : 8,
-              height: _currentImageIndex == index ? 12 : 8,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: _currentImageIndex == index ? Colors.deepPurple : Colors.grey),
-            )),
+    return SizedBox(
+      height: 300,
+      child: PageView.builder(
+        itemCount: imagenes.length,
+        onPageChanged: (index) => setState(() => _currentImageIndex = index),
+        itemBuilder: (context, index) => Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              color: Colors.white,
+              constraints: BoxConstraints(maxWidth: 250),
+              child: Image.network(
+                imagenes[index],
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image, size: 60, color: Colors.grey),
+              ),
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  String formatTimeAgo(Timestamp timestamp) {
+  final date = timestamp.toDate();
+  final now = DateTime.now();
+  final difference = now.difference(date);
+
+  if (difference.inDays > 7) {
+    return '${date.day}/${date.month}/${date.year}'; // formato normal si es muy viejo
+  } else if (difference.inDays >= 1) {
+    return 'hace ${difference.inDays} día(s)';
+  } else if (difference.inHours >= 1) {
+    return 'hace ${difference.inHours} hora(s)';
+  } else if (difference.inMinutes >= 1) {
+    return 'hace ${difference.inMinutes} minuto(s)';
+  } else {
+    return 'recién ahora';
+  }
+}
+
+
+ Widget _buildComentariosSection() {
+  return StreamBuilder<QuerySnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection('productos')
+        .doc(widget.productData['id'])
+        .collection('comentarios')
+        .orderBy('fecha', descending: true)
+        .snapshots(),
+    builder: (context, snapshot) {
+      List<Map<String, dynamic>> comentarios = [];
+
+      if (snapshot.hasData) {
+        comentarios = snapshot.data!.docs
+            .map((doc) => doc.data() as Map<String, dynamic>)
+            .toList();
+      }
+
+      // Combinar los comentarios locales primero
+      final todosComentarios = [..._comentariosLocal, ...comentarios];
+
+      if (todosComentarios.isEmpty) return Text('No hay opiniones todavía.');
+
+      return ListView.builder(
+        physics: NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: todosComentarios.length,
+        itemBuilder: (context, index) {
+          final data = todosComentarios[index];
+
+          return AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            margin: EdgeInsets.symmetric(vertical: 6),
+            child: Card(
+              elevation: 3,
+              child: ListTile(
+                leading: _buildStars(data['rating'] ?? 5),
+                title: Text(data['usuario'] ?? 'Anónimo', style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text(data['texto'] ?? '', style: TextStyle(fontSize: 15)),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+
+
+  Widget _buildAgregarComentarioSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Tu calificación:'),
+        Row(
+          children: List.generate(5, (index) => IconButton(
+            icon: Icon(
+              _rating > index ? Icons.star : Icons.star_border,
+              color: Colors.amber,
+            ),
+            onPressed: () {
+              setState(() {
+                _rating = index + 1;
+              });
+            },
+          )),
+        ),
+        SizedBox(height: 10),
+        TextField(
+          controller: _comentarioController,
+          decoration: InputDecoration(
+            hintText: 'Escribe tu opinión...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            suffixIcon: IconButton(
+              icon: Icon(Icons.send, color: Colors.deepPurple),
+              onPressed: _enviarComentario,
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildImagen(String url) {
-    return Center(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          color: Colors.white,
-          constraints: BoxConstraints(maxWidth: 250),
-          child: Image.network(
-            url,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image, size: 60, color: Colors.grey),
-          ),
+ void _enviarComentario() async {
+  final user = FirebaseAuth.instance.currentUser;
+  final texto = _comentarioController.text.trim();
+
+  if (user != null && texto.isNotEmpty) {
+    final nuevoComentario = {
+      'texto': texto,
+      'rating': _rating,
+      'usuario': user.email ?? 'Anónimo',
+      'fecha': Timestamp.fromDate(DateTime.now()), // Solo para orden, aunque no se muestra
+    };
+
+    // 1. Agregar inmediatamente a la lista local
+    setState(() {
+      _comentariosLocal.insert(0, nuevoComentario); // Insertar al principio para que aparezca arriba
+    });
+
+
+    // 2. Guardarlo en Firestore
+    await FirebaseFirestore.instance
+        .collection('productos')
+        .doc(widget.productData['id'])
+        .collection('comentarios')
+        .add(nuevoComentario);
+
+    // 3. Limpiar campo y estrellas
+    _comentarioController.clear();
+    _rating = 5;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Comentario enviado correctamente')),
+    );
+  }
+}
+
+
+  Widget _buildStars(int rating) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(
+        5,
+        (index) => Icon(
+          index < rating ? Icons.star : Icons.star_border,
+          size: 18,
+          color: Colors.amber,
         ),
       ),
     );
@@ -227,10 +283,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, shape: CircleBorder(), padding: EdgeInsets.all(12)),
           child: Icon(Icons.remove, size: 20, color: Colors.white),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('$_quantity', style: TextStyle(fontSize: 18)),
-        ),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Text('$_quantity', style: TextStyle(fontSize: 18))),
         ElevatedButton(
           onPressed: () => setState(() => _quantity++),
           style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, shape: CircleBorder(), padding: EdgeInsets.all(12)),
@@ -256,24 +309,41 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  List<String> _obtenerListaImagenes(dynamic imagenes) {
-    if (imagenes is List) {
-      return imagenes.whereType<String>().toList();
-    } else if (imagenes is String && imagenes.trim().isNotEmpty) {
-      return [imagenes];
-    } else {
-      return [];
+  void _addToCart() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .collection('carrito')
+          .add({
+        'nombre': widget.productData['nombre'],
+        'precio': widget.productData['precio'],
+        'imagen': _obtenerImagenPrincipal(widget.productData),
+        'cantidad': _quantity,
+        'fechaAgregado': FieldValue.serverTimestamp(),
+      });
+
+      setState(() {
+        _cartItemCount += _quantity;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$_quantity producto(s) agregado(s) al carrito')),
+      );
     }
   }
 
+  List<String> _obtenerListaImagenes(dynamic imagenes) {
+    if (imagenes is List) return imagenes.whereType<String>().toList();
+    if (imagenes is String && imagenes.trim().isNotEmpty) return [imagenes];
+    return [];
+  }
+
   String _obtenerImagenPrincipal(Map<String, dynamic> data) {
-    if (data['imagenes'] != null && data['imagenes'] is List && data['imagenes'].isNotEmpty) {
-      return data['imagenes'][0];
-    } else if (data['imagen'] != null && data['imagen'].toString().isNotEmpty) {
-      return data['imagen'];
-    } else {
-      return '';
-    }
+    if (data['imagenes'] != null && data['imagenes'] is List && data['imagenes'].isNotEmpty) return data['imagenes'][0];
+    if (data['imagen'] != null && data['imagen'].toString().isNotEmpty) return data['imagen'];
+    return '';
   }
 
   Widget _buildSectionTitle(String title) {
@@ -291,9 +361,5 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  List<String> _obtenerComentariosAleatorios() {
-    final random = Random();
-    final shuffled = List<String>.from(comentarios)..shuffle(random);
-    return shuffled.take(5).toList();
-  }
+  
 }
