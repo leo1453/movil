@@ -7,7 +7,7 @@ class ProductCard extends StatefulWidget {
   final bool isFavorite;
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
-  final VoidCallback? onAddToCart;
+  final VoidCallback? onAddToCart; // ✅ Agregado
 
   ProductCard({
     required this.title,
@@ -16,7 +16,7 @@ class ProductCard extends StatefulWidget {
     required this.onTap,
     required this.isFavorite,
     required this.onFavoriteToggle,
-    this.onAddToCart,
+    this.onAddToCart, // ✅ Agregado
   });
 
   @override
@@ -71,7 +71,6 @@ class _ProductCardState extends State<ProductCard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Imagen
                   Expanded(
                     flex: 6,
                     child: ClipRRect(
@@ -91,7 +90,6 @@ class _ProductCardState extends State<ProductCard>
                       ),
                     ),
                   ),
-                  // Nombre, precio, carrito
                   Expanded(
                     flex: 4,
                     child: Padding(
@@ -109,7 +107,14 @@ class _ProductCardState extends State<ProductCard>
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          //SizedBox(height: 4),
+                          SizedBox(height: 4),
+                          Row(
+                            children: List.generate(
+                              5,
+                              (index) => Icon(Icons.star, size: 14, color: Colors.amber),
+                            ),
+                          ),
+                          SizedBox(height: 4),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
@@ -125,12 +130,12 @@ class _ProductCardState extends State<ProductCard>
                                 ),
                               ),
                               SizedBox(
-                                width: 40, // espacio fijo para el botón
+                                width: 40,
                                 child: IconButton(
                                   icon: Icon(Icons.add_shopping_cart),
                                   color: Colors.deepPurple,
                                   iconSize: 20,
-                                  onPressed: widget.onAddToCart,
+                                  onPressed: widget.onAddToCart, // ✅ Aquí corregido
                                   tooltip: 'Agregar al carrito',
                                 ),
                               ),
@@ -143,7 +148,6 @@ class _ProductCardState extends State<ProductCard>
                 ],
               ),
             ),
-            // Corazón
             Positioned(
               top: 8,
               right: 8,

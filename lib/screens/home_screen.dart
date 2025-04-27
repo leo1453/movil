@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:proyecto/screens/addProduct_screen.dart';
 import '../widgets/product_card.dart';
 import 'categories_screen.dart';
@@ -9,7 +10,6 @@ import 'login_screen.dart';
 import 'order_history_screen.dart';
 import 'favorites_screen.dart';
 import 'profile_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -20,6 +20,34 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> favoriteProducts = [];
   TextEditingController searchController = TextEditingController();
   String searchQuery = '';
+
+  int _cartItemCount = 0; // 🛒 contador del carrito
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCartItemCount();
+  }
+
+  Future<void> _loadCartItemCount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .collection('carrito')
+          .get();
+      setState(() {
+        _cartItemCount = snapshot.docs.length;
+      });
+    }
+  }
+
+  void _incrementCartCount() {
+    setState(() {
+      _cartItemCount++;
+    });
+  }
 
   void toggleFavorite(Map<String, dynamic> product) {
     setState(() {
@@ -43,11 +71,28 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.deepPurple,
         iconTheme: IconThemeData(color: Colors.white),
         actions: [
-          IconButton(
-            icon: Icon(Icons.shopping_cart),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => CartScreen()));
-            },
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(Icons.shopping_cart),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => CartScreen()));
+                },
+              ),
+              if (_cartItemCount > 0)
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    padding: EdgeInsets.all(4),
+                    decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                    child: Text(
+                      '$_cartItemCount',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -108,8 +153,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     final producto = filteredProducts[index];
                     final data = producto.data() as Map<String, dynamic>;
-
-                    // 🛠️ AQUÍ: se obtiene la imagen correctamente
                     final imagenUrl = _obtenerImagenPrincipal(data);
 
                     return ProductCard(
@@ -128,6 +171,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       onFavoriteToggle: () {
                         toggleFavorite(data);
                       },
+                      onAddToCart: () {
+                        _addProductToCart(data);
+                      },
                     );
                   },
                 );
@@ -145,6 +191,28 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _addProductToCart(Map<String, dynamic> product) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .collection('carrito')
+          .add({
+        'nombre': product['nombre'],
+        'precio': product['precio'],
+        'imagen': _obtenerImagenPrincipal(product),
+        'cantidad': 1,
+        'fechaAgregado': FieldValue.serverTimestamp(),
+      });
+
+      _incrementCartCount(); // ✅ Aumentamos el contador visual
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Producto agregado al carrito')),
+      );
+    }
   }
 
   String _obtenerImagenPrincipal(Map<String, dynamic> data) {
