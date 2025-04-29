@@ -13,40 +13,68 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  String _generalError = '';
+
+  @override
+  void initState() {
+    super.initState();
+
+    _emailController.addListener(() {
+      if (_generalError.isNotEmpty) {
+        setState(() {
+          _generalError = '';
+        });
+      }
+    });
+
+    _passwordController.addListener(() {
+      if (_generalError.isNotEmpty) {
+        setState(() {
+          _generalError = '';
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   void _login() async {
     if (_formKey.currentState!.validate()) {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
 
+      setState(() {
+        _generalError = '';
+      });
+
       try {
-        // Mostrar SnackBar de carga
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Iniciando sesión...')));
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
 
-        // 1. Intentar iniciar sesión con Firebase Auth
-        UserCredential userCredential = await FirebaseAuth.instance
-            .signInWithEmailAndPassword(email: email, password: password);
-
-        // 2. Si todo sale bien, navegar al Home
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
         );
       } on FirebaseAuthException catch (e) {
-        // Mostrar error específico
-        String errorMsg;
-        if (e.code == 'user-not-found') {
-          errorMsg = 'No existe un usuario con ese correo.';
-        } else if (e.code == 'wrong-password') {
-          errorMsg = 'Contraseña incorrecta.';
-        } else {
-          errorMsg = 'Error al iniciar sesión. ${e.message}';
-        }
-
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(errorMsg)));
+        setState(() {
+          // No mostrar errores técnicos de Firebase
+          if (e.code == 'user-not-found' || e.code == 'wrong-password') {
+            _generalError = 'Correo o contraseña incorrectos.';
+          } else if (e.code == 'invalid-email') {
+            _generalError = 'Correo inválido. Revisa el formato.';
+          } else if (e.code == 'too-many-requests') {
+            _generalError = 'Demasiados intentos. Intenta más tarde.';
+          } else {
+            _generalError = 'Ocurrió un error. Inténtalo de nuevo.';
+          }
+        });
       }
     }
   }
@@ -134,6 +162,15 @@ class _LoginPageState extends State<LoginPage> {
                     return null;
                   },
                 ),
+                SizedBox(height: 16.0),
+
+                // Mostrar error general (si existe)
+                if (_generalError.isNotEmpty)
+                  Text(
+                    _generalError,
+                    style: TextStyle(color: Colors.red, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
                 SizedBox(height: 24.0),
 
                 // Botón de iniciar sesión
