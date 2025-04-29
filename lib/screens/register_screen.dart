@@ -13,41 +13,45 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController(); // 👈 Nuevo controlador
 
   void _register() async {
     if (_formKey.currentState!.validate()) {
       final username = _usernameController.text.trim();
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
+      final confirmPassword = _confirmPasswordController.text.trim();
+
+      if (password != confirmPassword) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Las contraseñas no coinciden')));
+        return;
+      }
 
       try {
-        // Mostrar SnackBar de carga
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Registrando usuario...')));
 
-        // 1. Crear cuenta en Firebase Auth
         UserCredential userCredential = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(email: email, password: password);
 
         final uid = userCredential.user!.uid;
 
-        // 2. Guardar datos en Firestore
         await FirebaseFirestore.instance.collection('usuarios').doc(uid).set({
           'nombre': username,
           'correo': email,
           'fechaRegistro': FieldValue.serverTimestamp(),
         });
 
-        // Navegar al Login (o Home)
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => LoginPage()),
         );
       } on FirebaseAuthException catch (e) {
         String errorMsg = 'Error al registrar: ${e.message}';
-        print(errorMsg);
-
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(errorMsg)));
@@ -71,15 +75,12 @@ class _RegisterPageState extends State<RegisterPage> {
             key: _formKey,
             child: Column(
               children: [
-                // Imagen de registro
                 CircleAvatar(
                   radius: 50,
                   backgroundImage: AssetImage('assets/imagenes/logo.png'),
                   backgroundColor: Colors.deepPurple,
                 ),
                 SizedBox(height: 24.0),
-
-                // Título
                 Text(
                   'Crea tu cuenta',
                   style: TextStyle(
@@ -90,7 +91,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 SizedBox(height: 32.0),
 
-                // Campo de usuario
                 TextFormField(
                   controller: _usernameController,
                   decoration: InputDecoration(
@@ -111,7 +111,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 SizedBox(height: 16.0),
 
-                // Campo de correo
                 TextFormField(
                   controller: _emailController,
                   decoration: InputDecoration(
@@ -136,7 +135,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 SizedBox(height: 16.0),
 
-                // Campo de contraseña
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
@@ -159,9 +157,31 @@ class _RegisterPageState extends State<RegisterPage> {
                     return null;
                   },
                 ),
+                SizedBox(height: 16.0),
+
+                TextFormField(
+                  controller:
+                      _confirmPasswordController, // 👈 Campo repetir contraseña
+                  decoration: InputDecoration(
+                    labelText: 'Confirmar Contraseña',
+                    prefixIcon: Icon(Icons.lock_outline),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor confirme su contraseña';
+                    }
+                    return null;
+                  },
+                ),
+
                 SizedBox(height: 24.0),
 
-                // Botón de registrar
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -177,10 +197,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     child: Text('Registrarse', style: TextStyle(fontSize: 16)),
                   ),
                 ),
-
                 SizedBox(height: 16.0),
 
-                // Enlace para volver al login
                 TextButton(
                   onPressed: () {
                     Navigator.pushReplacement(

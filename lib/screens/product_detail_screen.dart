@@ -6,7 +6,6 @@ import 'cart_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final Map<String, dynamic> productData;
-
   ProductDetailScreen({required this.productData});
 
   @override
@@ -14,6 +13,7 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  double _ratingPromedio = 0;
   int _cartItemCount = 0;
   int _quantity = 1;
   int _currentImageIndex = 0;
@@ -81,12 +81,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
-            Row(
-              children: List.generate(
-                5,
-                (index) => Icon(Icons.star, size: 20, color: Colors.amber),
-              ),
+            FutureBuilder<double>(
+              future: _obtenerPromedioRating(),
+              builder: (context, snapshot) {
+                double promedio = snapshot.data ?? 0;
+
+                return Row(
+                  children: List.generate(5, (index) {
+                    if (promedio >= index + 1) {
+                      return Icon(Icons.star, size: 20, color: Colors.amber);
+                    } else if (promedio >= index + 0.5) {
+                      return Icon(
+                        Icons.star_half,
+                        size: 20,
+                        color: Colors.amber,
+                      );
+                    } else {
+                      return Icon(
+                        Icons.star_border,
+                        size: 20,
+                        color: Colors.amber,
+                      );
+                    }
+                  }),
+                );
+              },
             ),
+
             SizedBox(height: 8),
             Text(
               '${product['precio']} MXN',
@@ -289,27 +310,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         'texto': texto,
         'rating': _rating,
         'usuario': user.email ?? 'Anónimo',
-        'fecha': Timestamp.fromDate(
-          DateTime.now(),
-        ), // Solo para orden, aunque no se muestra
+        'fecha': Timestamp.fromDate(DateTime.now()),
       };
 
-      // 1. Agregar inmediatamente a la lista local
-      setState(() {
-        _comentariosLocal.insert(
-          0,
-          nuevoComentario,
-        ); // Insertar al principio para que aparezca arriba
-      });
-
-      // 2. Guardarlo en Firestore
       await FirebaseFirestore.instance
           .collection('productos')
           .doc(widget.productData['id'])
           .collection('comentarios')
           .add(nuevoComentario);
 
-      // 3. Limpiar campo y estrellas
       _comentarioController.clear();
       _rating = 5;
 
@@ -563,5 +572,30 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         );
       },
     );
+  }
+
+  Future<double> _obtenerPromedioRating() async {
+    final comentariosSnapshot =
+        await FirebaseFirestore.instance
+            .collection('productos')
+            .doc(widget.productData['id'])
+            .collection('comentarios')
+            .get();
+
+    if (comentariosSnapshot.docs.isEmpty) return 0;
+
+    double sumaRatings = 0;
+    int totalRatings = 0;
+
+    for (var doc in comentariosSnapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data.containsKey('rating')) {
+        sumaRatings += (data['rating'] ?? 0).toDouble();
+        totalRatings++;
+      }
+    }
+
+    if (totalRatings == 0) return 0;
+    return sumaRatings / totalRatings;
   }
 }
