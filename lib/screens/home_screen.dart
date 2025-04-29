@@ -21,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   TextEditingController searchController = TextEditingController();
   String searchQuery = '';
 
-  int _cartItemCount = 0; // 🛒 contador del carrito
+  int _cartItemCount = 0;
 
   @override
   void initState() {
@@ -32,11 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadCartItemCount() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(user.uid)
-          .collection('carrito')
-          .get();
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(user.uid)
+              .collection('carrito')
+              .get();
       setState(() {
         _cartItemCount = snapshot.docs.length;
       });
@@ -67,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Figuras Coleccionables', style: TextStyle(color: Colors.white)),
+        title: Text('Figurarte', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.deepPurple,
         iconTheme: IconThemeData(color: Colors.white),
         actions: [
@@ -76,7 +77,10 @@ class _HomeScreenState extends State<HomeScreen> {
               IconButton(
                 icon: Icon(Icons.shopping_cart),
                 onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => CartScreen()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CartScreen()),
+                  );
                 },
               ),
               if (_cartItemCount > 0)
@@ -85,7 +89,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   top: 4,
                   child: Container(
                     padding: EdgeInsets.all(4),
-                    decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
                     child: Text(
                       '$_cartItemCount',
                       style: TextStyle(color: Colors.white, fontSize: 12),
@@ -105,18 +112,21 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: InputDecoration(
                 hintText: 'Buscar producto...',
                 prefixIcon: Icon(Icons.search),
-                suffixIcon: searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            searchController.clear();
-                            searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                suffixIcon:
+                    searchQuery.isNotEmpty
+                        ? IconButton(
+                          icon: Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              searchController.clear();
+                              searchQuery = '';
+                            });
+                          },
+                        )
+                        : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               onChanged: (value) {
                 setState(() {
@@ -127,7 +137,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('productos').snapshots(),
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('productos')
+                      .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return Center(child: CircularProgressIndicator());
@@ -135,11 +148,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 final productos = snapshot.data!.docs;
 
-                final filteredProducts = productos.where((producto) {
-                  final data = producto.data() as Map<String, dynamic>;
-                  final nombre = (data['nombre'] ?? '').toString().toLowerCase();
-                  return nombre.contains(searchQuery);
-                }).toList();
+                final filteredProducts =
+                    productos.where((producto) {
+                      final data = producto.data() as Map<String, dynamic>;
+                      final nombre =
+                          (data['nombre'] ?? '').toString().toLowerCase();
+                      return nombre.contains(searchQuery);
+                    }).toList();
 
                 return GridView.builder(
                   padding: EdgeInsets.all(8),
@@ -164,10 +179,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ProductDetailScreen(productData: {
-                              'id': producto.id,
-                              ...data,
-                            }),
+                            builder:
+                                (context) => ProductDetailScreen(
+                                  productData: {'id': producto.id, ...data},
+                                ),
                           ),
                         );
                       },
@@ -190,7 +205,10 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.deepPurple,
         child: Icon(Icons.add),
         onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => AddProductScreen()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddProductScreen()),
+          );
         },
       ),
     );
@@ -204,22 +222,24 @@ class _HomeScreenState extends State<HomeScreen> {
           .doc(user.uid)
           .collection('carrito')
           .add({
-        'nombre': product['nombre'],
-        'precio': product['precio'],
-        'imagen': _obtenerImagenPrincipal(product),
-        'cantidad': 1,
-        'fechaAgregado': FieldValue.serverTimestamp(),
-      });
+            'nombre': product['nombre'],
+            'precio': product['precio'],
+            'imagen': _obtenerImagenPrincipal(product),
+            'cantidad': 1,
+            'fechaAgregado': FieldValue.serverTimestamp(),
+          });
 
       _incrementCartCount(); // ✅ Aumentamos el contador visual
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Producto agregado al carrito')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Producto agregado al carrito')));
     }
   }
 
   String _obtenerImagenPrincipal(Map<String, dynamic> data) {
-    if (data['imagenes'] != null && data['imagenes'] is List && data['imagenes'].isNotEmpty) {
+    if (data['imagenes'] != null &&
+        data['imagenes'] is List &&
+        data['imagenes'].isNotEmpty) {
       return data['imagenes'][0];
     } else if (data['imagen'] != null && data['imagen'].toString().isNotEmpty) {
       return data['imagen'];
@@ -237,42 +257,81 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Container(
               width: double.infinity,
               alignment: Alignment.centerLeft,
-              child: Text('Menú', style: TextStyle(color: Colors.white, fontSize: 24)),
+              child: Text(
+                'Menú',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
             ),
           ),
           ListTile(
             leading: Icon(Icons.category, color: Colors.deepPurple),
-            title: Text('Categorías', style: TextStyle(color: Colors.deepPurple)),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CategoriesScreen())),
+            title: Text(
+              'Categorías',
+              style: TextStyle(color: Colors.deepPurple),
+            ),
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => CategoriesScreen()),
+                ),
           ),
           ListTile(
             leading: Icon(Icons.shopping_cart, color: Colors.deepPurple),
             title: Text('Carrito', style: TextStyle(color: Colors.deepPurple)),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CartScreen())),
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => CartScreen()),
+                ),
           ),
           ListTile(
             leading: Icon(Icons.favorite, color: Colors.deepPurple),
-            title: Text('Favoritos', style: TextStyle(color: Colors.deepPurple)),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => FavoritesScreen(favoriteProducts: favoriteProducts)),
+            title: Text(
+              'Favoritos',
+              style: TextStyle(color: Colors.deepPurple),
             ),
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) =>
+                            FavoritesScreen(favoriteProducts: favoriteProducts),
+                  ),
+                ),
           ),
           ListTile(
             leading: Icon(Icons.history, color: Colors.deepPurple),
-            title: Text('Historial de pedidos', style: TextStyle(color: Colors.deepPurple)),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => OrderHistoryScreen())),
+            title: Text(
+              'Historial de pedidos',
+              style: TextStyle(color: Colors.deepPurple),
+            ),
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => OrderHistoryScreen()),
+                ),
           ),
           ListTile(
             leading: Icon(Icons.person, color: Colors.deepPurple),
-            title: Text('Perfil de usuario', style: TextStyle(color: Colors.deepPurple)),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen())),
+            title: Text(
+              'Perfil de usuario',
+              style: TextStyle(color: Colors.deepPurple),
+            ),
+            onTap:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfileScreen()),
+                ),
           ),
           Spacer(),
           Divider(),
           ListTile(
             leading: Icon(Icons.logout, color: Colors.deepPurple),
-            title: Text('Cerrar sesión', style: TextStyle(color: Colors.deepPurple)),
+            title: Text(
+              'Cerrar sesión',
+              style: TextStyle(color: Colors.deepPurple),
+            ),
             onTap: () async {
               await FirebaseAuth.instance.signOut();
               Navigator.pushAndRemoveUntil(

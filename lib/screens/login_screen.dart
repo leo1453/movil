@@ -104,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 // Título
                 Text(
-                  'Bienvenido a Figuras Coleccionables',
+                  'Bienvenido a Figurarte',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

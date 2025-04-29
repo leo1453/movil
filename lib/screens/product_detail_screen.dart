@@ -161,31 +161,46 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Icon(Icons.broken_image, size: 60, color: Colors.grey),
       );
     }
-    return SizedBox(
-      height: 300,
-      child: PageView.builder(
-        itemCount: imagenes.length,
-        onPageChanged: (index) => setState(() => _currentImageIndex = index),
-        itemBuilder:
-            (context, index) => Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  color: Colors.white,
-                  constraints: BoxConstraints(maxWidth: 250),
-                  child: Image.network(
-                    imagenes[index],
-                    fit: BoxFit.contain,
-                    errorBuilder:
-                        (context, error, stackTrace) => Icon(
-                          Icons.broken_image,
-                          size: 60,
-                          color: Colors.grey,
-                        ),
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => ImagenesFullscreen(
+                  imagenes: imagenes,
+                  initialIndex: _currentImageIndex,
+                ),
+          ),
+        );
+      },
+      child: SizedBox(
+        height: 300,
+        child: PageView.builder(
+          itemCount: imagenes.length,
+          onPageChanged: (index) => setState(() => _currentImageIndex = index),
+          itemBuilder:
+              (context, index) => Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    color: Colors.white,
+                    constraints: BoxConstraints(maxWidth: 250),
+                    child: Image.network(
+                      imagenes[index],
+                      fit: BoxFit.contain,
+                      errorBuilder:
+                          (context, error, stackTrace) => Icon(
+                            Icons.broken_image,
+                            size: 60,
+                            color: Colors.grey,
+                          ),
+                    ),
                   ),
                 ),
               ),
-            ),
+        ),
       ),
     );
   }
@@ -597,5 +612,63 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     if (totalRatings == 0) return 0;
     return sumaRatings / totalRatings;
+  }
+}
+
+class ImagenesFullscreen extends StatefulWidget {
+  final List<String> imagenes;
+  final int initialIndex;
+
+  ImagenesFullscreen({required this.imagenes, this.initialIndex = 0});
+
+  @override
+  _ImagenesFullscreenState createState() => _ImagenesFullscreenState();
+}
+
+class _ImagenesFullscreenState extends State<ImagenesFullscreen> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: IconThemeData(color: Colors.white),
+        elevation: 0,
+      ),
+      body: PageView.builder(
+        controller: _pageController,
+        itemCount: widget.imagenes.length,
+        itemBuilder: (context, index) {
+          return InteractiveViewer(
+            child: Center(
+              child: Image.network(
+                widget.imagenes[index],
+                fit: BoxFit.contain,
+                errorBuilder:
+                    (context, error, stackTrace) => Icon(
+                      Icons.broken_image,
+                      color: Colors.white,
+                      size: 100,
+                    ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 }

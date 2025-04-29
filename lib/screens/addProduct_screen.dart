@@ -22,7 +22,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController _colorController = TextEditingController();
   final TextEditingController _dimensionesController = TextEditingController();
   final TextEditingController _pesoController = TextEditingController();
-  final TextEditingController _tiempoEntregaController = TextEditingController();
+  final TextEditingController _tiempoEntregaController =
+      TextEditingController();
 
   String? _selectedCategory;
   String? _selectedCondition;
@@ -59,9 +60,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
         Navigator.pop(context);
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al agregar: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error al agregar: $e')));
       }
     }
   }
@@ -71,7 +72,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('Agregar Producto'),
+        title: Text('Agregar Producto', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.deepPurple,
       ),
       body: Padding(
@@ -83,8 +84,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
               _buildSectionTitle('Información básica'),
               _buildTextField(_nombreController, 'Nombre del producto'),
               _buildTextField(_descripcionController, 'Descripción'),
-              _buildTextField(_precioController, 'Precio', keyboardType: TextInputType.number),
-              _buildTextField(_stockController, 'Stock disponible', keyboardType: TextInputType.number),
+              _buildTextField(
+                _precioController,
+                'Precio',
+                keyboardType: TextInputType.number,
+              ),
+              _buildTextField(
+                _stockController,
+                'Stock disponible',
+                keyboardType: TextInputType.number,
+              ),
               _buildDropdownField(
                 label: 'Categoría',
                 value: _selectedCategory,
@@ -108,7 +117,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
               _buildTextField(_modeloController, 'Modelo'),
               _buildTextField(_materialController, 'Material'),
               _buildTextField(_colorController, 'Color principal'),
-              _buildTextField(_dimensionesController, 'Dimensiones (alto x ancho x profundidad)'),
+              _buildTextField(
+                _dimensionesController,
+                'Dimensiones (alto x ancho x profundidad)',
+              ),
               _buildTextField(_pesoController, 'Peso (kg)'),
               Divider(height: 32),
 
@@ -133,7 +145,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   });
                 },
               ),
-              _buildTextField(_tiempoEntregaController, 'Tiempo estimado de entrega (días)'),
+              _buildTextField(
+                _tiempoEntregaController,
+                'Tiempo estimado de entrega (días)',
+              ),
 
               SizedBox(height: 24),
               ElevatedButton(
@@ -145,7 +160,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text('Guardar Producto', style: TextStyle(fontSize: 16)),
+                child: Text(
+                  'Guardar Producto',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
               ),
             ],
           ),
@@ -185,9 +203,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
         value: value,
-        items: items.map((item) {
-          return DropdownMenuItem(value: item, child: Text(item));
-        }).toList(),
+        items:
+            items.map((item) {
+              return DropdownMenuItem(value: item, child: Text(item));
+            }).toList(),
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
