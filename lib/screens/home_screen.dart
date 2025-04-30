@@ -20,13 +20,13 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> favoriteProducts = [];
   TextEditingController searchController = TextEditingController();
   String searchQuery = '';
-
   int _cartItemCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadCartItemCount();
+    _loadFavorites();
   }
 
   Future<void> _loadCartItemCount() async {
@@ -44,20 +44,58 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadFavorites() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final favSnapshot =
+          await FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(user.uid)
+              .collection('favoritos')
+              .get();
+      final favs = favSnapshot.docs.map((doc) => doc.data()).toList();
+      setState(() {
+        favoriteProducts = List<Map<String, dynamic>>.from(favs);
+      });
+    }
+  }
+
   void _incrementCartCount() {
     setState(() {
       _cartItemCount++;
     });
   }
 
-  void toggleFavorite(Map<String, dynamic> product) {
-    setState(() {
-      if (isFavorite(product)) {
+  void toggleFavorite(Map<String, dynamic> product) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final favRef = FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(user.uid)
+        .collection('favoritos');
+
+    final exists = favoriteProducts.any(
+      (p) => p['nombre'] == product['nombre'],
+    );
+
+    if (exists) {
+      await favRef.where('nombre', isEqualTo: product['nombre']).get().then((
+        snapshot,
+      ) {
+        for (var doc in snapshot.docs) {
+          doc.reference.delete();
+        }
+      });
+      setState(() {
         favoriteProducts.removeWhere((p) => p['nombre'] == product['nombre']);
-      } else {
+      });
+    } else {
+      await favRef.add(product);
+      setState(() {
         favoriteProducts.add(product);
-      }
-    });
+      });
+    }
   }
 
   bool isFavorite(Map<String, dynamic> product) {
@@ -142,15 +180,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       .collection('productos')
                       .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (!snapshot.hasData)
                   return Center(child: CircularProgressIndicator());
-                }
-
                 final productos = snapshot.data!.docs;
-
-                final filteredProducts =
-                    productos.where((producto) {
-                      final data = producto.data() as Map<String, dynamic>;
+                final filtered =
+                    productos.where((p) {
+                      final data = p.data() as Map<String, dynamic>;
                       final nombre =
                           (data['nombre'] ?? '').toString().toLowerCase();
                       return nombre.contains(searchQuery);
@@ -164,29 +199,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
                   ),
-                  itemCount: filteredProducts.length,
+                  itemCount: filtered.length,
                   itemBuilder: (context, index) {
-                    final producto = filteredProducts[index];
-                    final data = producto.data() as Map<String, dynamic>;
-                    final imagenUrl = _obtenerImagenPrincipal(data);
-
+                    final doc = filtered[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    final image = _obtenerImagenPrincipal(data);
                     return ProductCard(
                       title: data['nombre'] ?? '',
                       price: '${data['precio']} MXN',
-                      image: imagenUrl,
+                      image: image,
                       isFavorite: isFavorite(data),
-                      productId: producto.id, // 🔴 Aquí se pasa el ID
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => ProductDetailScreen(
-                                  productData: {'id': producto.id, ...data},
-                                ),
+                      productId: doc.id,
+                      onTap:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => ProductDetailScreen(
+                                    productData: {'id': doc.id, ...data},
+                                  ),
+                            ),
                           ),
-                        );
-                      },
                       onFavoriteToggle: () => toggleFavorite(data),
                       onAddToCart: () => _addProductToCart(data),
                     );
@@ -260,66 +293,35 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          ListTile(
-            leading: Icon(Icons.category, color: Colors.deepPurple),
-            title: Text(
-              'Categorías',
-              style: TextStyle(color: Colors.deepPurple),
-            ),
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CategoriesScreen()),
-                ),
+          _buildDrawerItem(
+            context,
+            'Categorías',
+            Icons.category,
+            CategoriesScreen(),
           ),
-          ListTile(
-            leading: Icon(Icons.shopping_cart, color: Colors.deepPurple),
-            title: Text('Carrito', style: TextStyle(color: Colors.deepPurple)),
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CartScreen()),
-                ),
+          _buildDrawerItem(
+            context,
+            'Carrito',
+            Icons.shopping_cart,
+            CartScreen(),
           ),
-          ListTile(
-            leading: Icon(Icons.favorite, color: Colors.deepPurple),
-            title: Text(
-              'Favoritos',
-              style: TextStyle(color: Colors.deepPurple),
-            ),
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) =>
-                            FavoritesScreen(favoriteProducts: favoriteProducts),
-                  ),
-                ),
+          _buildDrawerItem(
+            context,
+            'Favoritos',
+            Icons.favorite,
+            FavoritesScreen(favoriteProducts: favoriteProducts),
           ),
-          ListTile(
-            leading: Icon(Icons.history, color: Colors.deepPurple),
-            title: Text(
-              'Historial de pedidos',
-              style: TextStyle(color: Colors.deepPurple),
-            ),
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => OrderHistoryScreen()),
-                ),
+          _buildDrawerItem(
+            context,
+            'Historial de pedidos',
+            Icons.history,
+            OrderHistoryScreen(),
           ),
-          ListTile(
-            leading: Icon(Icons.person, color: Colors.deepPurple),
-            title: Text(
-              'Perfil de usuario',
-              style: TextStyle(color: Colors.deepPurple),
-            ),
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => ProfileScreen()),
-                ),
+          _buildDrawerItem(
+            context,
+            'Perfil de usuario',
+            Icons.person,
+            ProfileScreen(),
           ),
           Spacer(),
           Divider(),
@@ -333,13 +335,30 @@ class _HomeScreenState extends State<HomeScreen> {
               await FirebaseAuth.instance.signOut();
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => LoginPage()),
-                (Route<dynamic> route) => false,
+                MaterialPageRoute(builder: (_) => LoginPage()),
+                (route) => false,
               );
             },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDrawerItem(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Widget screen,
+  ) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.deepPurple),
+      title: Text(title, style: TextStyle(color: Colors.deepPurple)),
+      onTap:
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => screen),
+          ),
     );
   }
 }
