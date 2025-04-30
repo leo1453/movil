@@ -81,32 +81,48 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
-            FutureBuilder<double>(
-              future: _obtenerPromedioRating(),
-              builder: (context, snapshot) {
-                double promedio = snapshot.data ?? 0;
+            StreamBuilder<QuerySnapshot>(
+  stream: FirebaseFirestore.instance
+      .collection('productos')
+      .doc(widget.productData['id'])
+      .collection('comentarios')
+      .snapshots(),
+  builder: (context, snapshot) {
+    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+      return Row(
+        children: List.generate(5, (_) => Icon(Icons.star_border, size: 20, color: Colors.amber)),
+      );
+    }
 
-                return Row(
-                  children: List.generate(5, (index) {
-                    if (promedio >= index + 1) {
-                      return Icon(Icons.star, size: 20, color: Colors.amber);
-                    } else if (promedio >= index + 0.5) {
-                      return Icon(
-                        Icons.star_half,
-                        size: 20,
-                        color: Colors.amber,
-                      );
-                    } else {
-                      return Icon(
-                        Icons.star_border,
-                        size: 20,
-                        color: Colors.amber,
-                      );
-                    }
-                  }),
-                );
-              },
-            ),
+    final docs = snapshot.data!.docs;
+    double suma = 0;
+    int total = 0;
+
+    for (var doc in docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data.containsKey('rating')) {
+        suma += (data['rating'] ?? 0).toDouble();
+        total++;
+      }
+    }
+
+    final promedio = total > 0 ? suma / total : 0;
+
+    return Row(
+      children: List.generate(5, (index) {
+        if (promedio >= index + 1) {
+          return Icon(Icons.star, size: 20, color: Colors.amber);
+        } else if (promedio >= index + 0.5) {
+          return Icon(Icons.star_half, size: 20, color: Colors.amber);
+        } else {
+          return Icon(Icons.star_border, size: 20, color: Colors.amber);
+        }
+      }),
+    );
+  },
+),
+
+
 
             SizedBox(height: 8),
             Text(

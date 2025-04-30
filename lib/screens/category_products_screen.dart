@@ -57,7 +57,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
             padding: EdgeInsets.all(8),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 0.6,
+              childAspectRatio: 0.56,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
             ),
@@ -73,18 +73,17 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                 price: '${data['precio'] ?? 0} MXN',
                 image: imagenUrl,
                 isFavorite: isFavorite(data),
+                productId: producto.id, // 🔴 Aquí estaba faltando
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder:
-                          (context) => ProductDetailScreen(
-                            productData: {
-                              ...data,
-                              'id':
-                                  producto.id, // ✅ Añadimos el ID del documento
-                            },
-                          ),
+                      builder: (context) => ProductDetailScreen(
+                        productData: {
+                          ...data,
+                          'id': producto.id,
+                        },
+                      ),
                     ),
                   );
                 },
@@ -92,6 +91,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                   toggleFavorite(data);
                 },
               );
+
             },
           );
         },

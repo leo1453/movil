@@ -160,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsets.all(8),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.6,
+                    childAspectRatio: 0.56,
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
                   ),
@@ -175,6 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       price: '${data['precio']} MXN',
                       image: imagenUrl,
                       isFavorite: isFavorite(data),
+                      productId: producto.id, // 🔴 Aquí se pasa el ID
                       onTap: () {
                         Navigator.push(
                           context,
@@ -186,12 +187,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         );
                       },
-                      onFavoriteToggle: () {
-                        toggleFavorite(data);
-                      },
-                      onAddToCart: () {
-                        _addProductToCart(data);
-                      },
+                      onFavoriteToggle: () => toggleFavorite(data),
+                      onAddToCart: () => _addProductToCart(data),
                     );
                   },
                 );
@@ -229,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'fechaAgregado': FieldValue.serverTimestamp(),
           });
 
-      _incrementCartCount(); // ✅ Aumentamos el contador visual
+      _incrementCartCount();
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Producto agregado al carrito')));

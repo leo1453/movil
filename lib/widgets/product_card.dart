@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProductCard extends StatefulWidget {
   final String title;
@@ -7,7 +8,8 @@ class ProductCard extends StatefulWidget {
   final bool isFavorite;
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
-  final VoidCallback? onAddToCart; // ✅ Agregado
+  final VoidCallback? onAddToCart;
+  final String productId; // 🔴 Se necesita pasar el ID desde HomeScreen
 
   ProductCard({
     required this.title,
@@ -16,27 +18,42 @@ class ProductCard extends StatefulWidget {
     required this.onTap,
     required this.isFavorite,
     required this.onFavoriteToggle,
-    this.onAddToCart, // ✅ Agregado
+    required this.productId,
+    this.onAddToCart,
   });
 
   @override
   _ProductCardState createState() => _ProductCardState();
 }
 
-class _ProductCardState extends State<ProductCard>
-    with SingleTickerProviderStateMixin {
+class _ProductCardState extends State<ProductCard> {
   double _scale = 1.0;
 
-  void _onTapDown(TapDownDetails details) {
-    setState(() => _scale = 0.96);
-  }
+  void _onTapDown(TapDownDetails details) => setState(() => _scale = 0.96);
+  void _onTapUp(TapUpDetails details) => setState(() => _scale = 1.0);
+  void _onTapCancel() => setState(() => _scale = 1.0);
 
-  void _onTapUp(TapUpDetails details) {
-    setState(() => _scale = 1.0);
-  }
+  Future<double> _obtenerPromedioRating() async {
+    final comentarios = await FirebaseFirestore.instance
+        .collection('productos')
+        .doc(widget.productId)
+        .collection('comentarios')
+        .get();
 
-  void _onTapCancel() {
-    setState(() => _scale = 1.0);
+    if (comentarios.docs.isEmpty) return 0;
+
+    double suma = 0;
+    int total = 0;
+
+    for (var doc in comentarios.docs) {
+      final data = doc.data();
+      if (data.containsKey('rating')) {
+        suma += (data['rating'] ?? 0).toDouble();
+        total++;
+      }
+    }
+
+    return total > 0 ? suma / total : 0;
   }
 
   @override
@@ -50,8 +67,7 @@ class _ProductCardState extends State<ProductCard>
       onTapCancel: _onTapCancel,
       child: AnimatedScale(
         scale: _scale,
-        duration: Duration(milliseconds: 150),
-        curve: Curves.easeOut,
+        duration: Duration(milliseconds: 150), 
         child: Stack(
           children: [
             Container(
@@ -62,7 +78,7 @@ class _ProductCardState extends State<ProductCard>
                 boxShadow: [
                   BoxShadow(
                     color: Colors.deepPurple.withOpacity(0.1),
-                    blurRadius: 8,
+                    blurRadius: 9,
                     spreadRadius: 2,
                     offset: Offset(2, 4),
                   ),
@@ -81,63 +97,92 @@ class _ProductCardState extends State<ProductCard>
                             ? Image.network(
                                 widget.image,
                                 fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Center(child: Icon(Icons.broken_image, size: 40, color: Colors.grey)),
+                                errorBuilder: (_, __, ___) => Center(
+                                  child: Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                                ),
                               )
-                            : Center(
-                                child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                              ),
+                            : Center(child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey)),
                       ),
                     ),
                   ),
                   Expanded(
                     flex: 4,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 4.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 6.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             widget.title,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                            ),
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                           SizedBox(height: 4),
+                    StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('productos')
+                              .doc(widget.productId)
+                              .collection('comentarios')
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                              return Row(
+                                children: [
+                                  ...List.generate(5, (_) => Icon(Icons.star_border, size: 14, color: Colors.amber)),
+                                  SizedBox(width: 4),
+                                  Text('0.0/5', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                ],
+                              );
+                            }
+
+                            final docs = snapshot.data!.docs;
+                            double suma = 0;
+                            int total = 0;
+
+                            for (var doc in docs) {
+                              final data = doc.data() as Map<String, dynamic>;
+                              if (data.containsKey('rating')) {
+                                suma += (data['rating'] ?? 0).toDouble();
+                                total++;
+                              }
+                            }
+
+                            final promedio = total > 0 ? suma / total : 0;
+
+                            return Row(
+                              children: [
+                                ...List.generate(5, (index) {
+                                  if (promedio >= index + 1) {
+                                    return Icon(Icons.star, size: 14, color: Colors.amber);
+                                  } else if (promedio >= index + 0.5) {
+                                    return Icon(Icons.star_half, size: 14, color: Colors.amber);
+                                  } else {
+                                    return Icon(Icons.star_border, size: 14, color: Colors.amber);
+                                  }
+                                }),
+                                SizedBox(width: 4),
+                                Text('${promedio.toStringAsFixed(1)}/5', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                              ],
+                            );
+                          },
+                        ),
+
+                          //SizedBox(height: 2),
                           Row(
-                            children: List.generate(
-                              5,
-                              (index) => Icon(Icons.star, size: 14, color: Colors.amber),
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Expanded(
                                 child: Text(
                                   widget.price,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.deepPurple,
-                                  ),
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepPurple),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              SizedBox(
-                                width: 40,
-                                child: IconButton(
-                                  icon: Icon(Icons.add_shopping_cart),
-                                  color: Colors.deepPurple,
-                                  iconSize: 20,
-                                  onPressed: widget.onAddToCart, // ✅ Aquí corregido
-                                  tooltip: 'Agregar al carrito',
-                                ),
+                              IconButton(
+                                icon: Icon(Icons.add_shopping_cart),
+                                color: Colors.deepPurple,
+                                iconSize: 20,
+                                onPressed: widget.onAddToCart,
                               ),
                             ],
                           ),
