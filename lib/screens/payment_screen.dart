@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 
 class PaymentScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cartProducts;
@@ -15,15 +16,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final _formKey = GlobalKey<FormState>();
   String _selectedPaymentMethod = 'Tarjeta de crédito';
 
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _cityController = TextEditingController();
-  final TextEditingController _postalCodeController = TextEditingController();
-  final TextEditingController _cardNumberController = TextEditingController();
-  final TextEditingController _expiryDateController = TextEditingController();
-  final TextEditingController _cvvController = TextEditingController();
-  final TextEditingController _paypalEmailController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _postalCodeController = TextEditingController();
+  final _cardNumberController = TextEditingController();
+  final _expiryDateController = TextEditingController();
+  final _cvvController = TextEditingController();
+  final _paypalEmailController = TextEditingController();
 
   double get totalAmount {
     return widget.cartProducts.fold(
@@ -32,19 +33,51 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _precargarDatosUsuario();
+  }
+
+  Future<void> _precargarDatosUsuario() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(user.uid)
+              .get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        _nameController.text = data['nombre'] ?? '';
+        _phoneController.text = data['telefono'] ?? '';
+        _addressController.text = data['direccion'] ?? '';
+        _cityController.text = data['ciudad'] ?? '';
+        _postalCodeController.text = data['codigoPostal'] ?? '';
+      }
+    }
+  }
+
   void _confirmPurchase() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Procesando pago...')));
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => Center(child: CircularProgressIndicator()),
+      );
 
       try {
         final user = FirebaseAuth.instance.currentUser;
-        if (user == null) {
-          throw Exception('Usuario no autenticado');
-        }
+        if (user == null) throw Exception('Usuario no autenticado');
 
         final uid = user.uid;
+        final cardLast4 =
+            _cardNumberController.text.length >= 4
+                ? _cardNumberController.text.substring(
+                  _cardNumberController.text.length - 4,
+                )
+                : '';
+
         final orderData = {
           'productos': widget.cartProducts,
           'total': totalAmount,
@@ -56,47 +89,59 @@ class _PaymentScreenState extends State<PaymentScreen> {
             'codigoPostal': _postalCodeController.text,
           },
           'metodoPago': _selectedPaymentMethod,
+          'tarjetaFinal': cardLast4,
           'fecha': Timestamp.now(),
           'estado': 'Pendiente',
         };
 
-        // Guardar el pedido
-        await FirebaseFirestore.instance
+        final userRef = FirebaseFirestore.instance
             .collection('usuarios')
-            .doc(uid)
-            .collection('pedidos')
-            .add(orderData);
+            .doc(uid);
+        final globalRef = FirebaseFirestore.instance.collection(
+          'pedidos_globales',
+        );
 
-        // 🔥 Vaciar carrito después de guardar pedido
-        final carrito = FirebaseFirestore.instance
-            .collection('usuarios')
-            .doc(uid)
-            .collection('carrito');
+        await userRef.collection('pedidos').add(orderData);
+        await globalRef.add({...orderData, 'uid': uid});
 
+        final carrito = userRef.collection('carrito');
         final snapshot = await carrito.get();
         for (var doc in snapshot.docs) {
           await doc.reference.delete();
         }
 
-        Future.delayed(Duration(seconds: 2), () {
-          showDialog(
-            context: context,
-            builder:
-                (_) => AlertDialog(
-                  title: Text('¡Compra exitosa!'),
-                  content: Text('Gracias por tu compra.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.popUntil(context, (route) => route.isFirst);
-                      },
-                      child: Text('Volver al inicio'),
-                    ),
+        Navigator.pop(context); // Cierra CircularProgress
+        await showDialog(
+          context: context,
+          builder:
+              (_) => AlertDialog(
+                title: Text('¡Compra exitosa!'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Gracias por tu compra.'),
+                    SizedBox(height: 10),
+                    ...widget.cartProducts
+                        .map((p) => Text('- ${p['nombre']} x${p['cantidad']}'))
+                        .toList(),
+                    SizedBox(height: 10),
+                    Text('Total: \$${totalAmount.toStringAsFixed(2)} MXN'),
                   ],
                 ),
-          );
-        });
+                actions: [
+                  TextButton(
+                    onPressed:
+                        () => Navigator.popUntil(
+                          context,
+                          (route) => route.isFirst,
+                        ),
+                    child: Text('Volver al inicio'),
+                  ),
+                ],
+              ),
+        );
       } catch (e) {
+        Navigator.pop(context);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -120,9 +165,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         validator:
             validator ??
             (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.isEmpty)
                 return 'Este campo es obligatorio';
-              }
               return null;
             },
         decoration: InputDecoration(
@@ -140,7 +184,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Widget buildPaymentFields() {
     if (_selectedPaymentMethod == 'Tarjeta de crédito') {
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           buildTextField(
             label: 'Número de tarjeta',
@@ -148,20 +191,36 @@ class _PaymentScreenState extends State<PaymentScreen> {
             icon: Icons.credit_card,
             controller: _cardNumberController,
             inputType: TextInputType.number,
+            validator:
+                (v) =>
+                    v == null || v.length != 16
+                        ? 'Debe tener 16 dígitos'
+                        : null,
           ),
           buildTextField(
             label: 'Fecha de expiración',
-            hint: 'MM/AA',
+            hint: 'Ej. 0526',
             icon: Icons.date_range,
             controller: _expiryDateController,
-            inputType: TextInputType.datetime,
+            inputType: TextInputType.number,
+            validator: (v) {
+              if (v == null || v.length != 4)
+                return 'Debe tener 4 dígitos (MMAA)';
+              final mes = int.tryParse(v.substring(0, 2));
+              if (mes == null || mes < 1 || mes > 12) return 'Mes inválido';
+              return null;
+            },
           ),
+
           buildTextField(
             label: 'CVV',
             hint: 'Ej. 123',
             icon: Icons.lock,
             controller: _cvvController,
             inputType: TextInputType.number,
+            validator:
+                (v) =>
+                    v == null || v.length != 3 ? 'Debe tener 3 dígitos' : null,
           ),
         ],
       );
@@ -193,60 +252,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Resumen de la orden',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
-                ),
-              ),
-              SizedBox(height: 12),
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    children: [
-                      for (var product in widget.cartProducts)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Row(
-                            children: [
-                              Image.network(
-                                product['imagen'],
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                                errorBuilder:
-                                    (context, error, stackTrace) =>
-                                        Icon(Icons.broken_image, size: 50),
-                              ),
-                              SizedBox(width: 10),
-                              Expanded(child: Text(product['nombre'])),
-                              Text('${product['precio']} MXN'),
-                            ],
-                          ),
-                        ),
-                      Divider(),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'Total: ${totalAmount.toStringAsFixed(2)} MXN',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 24),
-              Text(
                 'Información de envío',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -266,7 +271,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 icon: Icons.phone,
                 controller: _phoneController,
                 inputType: TextInputType.phone,
+                validator:
+                    (v) =>
+                        v == null || !RegExp(r'^\d{10}$').hasMatch(v)
+                            ? 'Teléfono inválido'
+                            : null,
               ),
+
               buildTextField(
                 label: 'Dirección',
                 hint: 'Calle, número, colonia',
@@ -275,7 +286,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
               buildTextField(
                 label: 'Ciudad',
-                hint: 'Ej. Ciudad de México',
+                hint: 'Ej. CDMX',
                 icon: Icons.location_city,
                 controller: _cityController,
               ),
@@ -285,7 +296,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 icon: Icons.markunread_mailbox,
                 controller: _postalCodeController,
                 inputType: TextInputType.number,
+                validator:
+                    (v) => v == null || v.length < 4 ? 'Código inválido' : null,
               ),
+              SizedBox(height: 16),
               Text(
                 'Método de pago',
                 style: TextStyle(
@@ -305,11 +319,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ),
                         )
                         .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPaymentMethod = value!;
-                  });
-                },
+                onChanged:
+                    (value) => setState(() => _selectedPaymentMethod = value!),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
