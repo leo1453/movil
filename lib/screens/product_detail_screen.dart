@@ -109,16 +109,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final promedio = total > 0 ? suma / total : 0;
 
     return Row(
-      children: List.generate(5, (index) {
-        if (promedio >= index + 1) {
-          return Icon(Icons.star, size: 20, color: Colors.amber);
-        } else if (promedio >= index + 0.5) {
-          return Icon(Icons.star_half, size: 20, color: Colors.amber);
-        } else {
-          return Icon(Icons.star_border, size: 20, color: Colors.amber);
-        }
-      }),
-    );
+  crossAxisAlignment: CrossAxisAlignment.center,
+  children: [
+    ...List.generate(5, (index) {
+      if (promedio >= index + 1) {
+        return Icon(Icons.star, size: 20, color: Colors.amber);
+      } else if (promedio >= index + 0.5) {
+        return Icon(Icons.star_half, size: 20, color: Colors.amber);
+      } else {
+        return Icon(Icons.star_border, size: 20, color: Colors.amber);
+      }
+    }),
+    SizedBox(width: 8),
+    Text(
+      promedio.toStringAsFixed(1), // por ejemplo: "4.3"
+      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+    ),
+  ],
+);
+
   },
 ),
 

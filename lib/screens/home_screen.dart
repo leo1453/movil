@@ -45,20 +45,55 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadFavorites() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final favSnapshot =
-          await FirebaseFirestore.instance
-              .collection('usuarios')
-              .doc(user.uid)
-              .collection('favoritos')
-              .get();
-      final favs = favSnapshot.docs.map((doc) => doc.data()).toList();
-      setState(() {
-        favoriteProducts = List<Map<String, dynamic>>.from(favs);
-      });
+  final user = FirebaseAuth.instance.currentUser;
+  if (user != null) {
+    final favSnapshot = await FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(user.uid)
+        .collection('favoritos')
+        .get();
+
+    List<Map<String, dynamic>> actualizados = [];
+
+    for (var doc in favSnapshot.docs) {
+      final data = doc.data();
+
+      // Si ya tiene ID, lo usamos tal cual
+      if (data.containsKey('id') && data['id'].toString().isNotEmpty) {
+        actualizados.add(data);
+        continue;
+      }
+
+      // Si no tiene ID, intentamos buscarlo por nombre
+      final resultado = await FirebaseFirestore.instance
+          .collection('productos')
+          .where('nombre', isEqualTo: data['nombre'])
+          .limit(1)
+          .get();
+
+      if (resultado.docs.isNotEmpty) {
+        final productoOriginal = resultado.docs.first;
+        final newData = {
+          'id': productoOriginal.id,
+          ...data,
+        };
+
+        // Opcional: puedes actualizar el doc también en Firestore
+        await doc.reference.set(newData);
+
+        actualizados.add(newData);
+      } else {
+        // No se encontró el producto, dejamos el doc como está
+        actualizados.add(data);
+      }
     }
+
+    setState(() {
+      favoriteProducts = actualizados;
+    });
   }
+}
+
 
   void _incrementCartCount() {
     setState(() {
@@ -67,36 +102,40 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void toggleFavorite(Map<String, dynamic> product) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
 
-    final favRef = FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(user.uid)
-        .collection('favoritos');
+  final favRef = FirebaseFirestore.instance
+      .collection('usuarios')
+      .doc(user.uid)
+      .collection('favoritos');
 
-    final exists = favoriteProducts.any(
-      (p) => p['nombre'] == product['nombre'],
-    );
+  final exists = favoriteProducts.any((p) => p['nombre'] == product['nombre']);
 
-    if (exists) {
-      await favRef.where('nombre', isEqualTo: product['nombre']).get().then((
-        snapshot,
-      ) {
-        for (var doc in snapshot.docs) {
-          doc.reference.delete();
-        }
-      });
-      setState(() {
-        favoriteProducts.removeWhere((p) => p['nombre'] == product['nombre']);
-      });
-    } else {
-      await favRef.add(product);
-      setState(() {
-        favoriteProducts.add(product);
-      });
-    }
+  final productWithId = Map<String, dynamic>.from(product);
+
+  // ✅ aseguramos que tenga el ID correcto del producto original
+  if (!productWithId.containsKey('id') || productWithId['id'].toString().isEmpty) {
+    productWithId['id'] = product['productId'] ?? product['id'] ?? '';
   }
+
+  if (exists) {
+    await favRef.where('nombre', isEqualTo: product['nombre']).get().then((snapshot) {
+      for (var doc in snapshot.docs) {
+        doc.reference.delete();
+      }
+    });
+    setState(() {
+      favoriteProducts.removeWhere((p) => p['nombre'] == product['nombre']);
+    });
+  } else {
+    await favRef.add(productWithId);
+    setState(() {
+      favoriteProducts.add(productWithId);
+    });
+  }
+}
+
 
   bool isFavorite(Map<String, dynamic> product) {
     return favoriteProducts.any((p) => p['nombre'] == product['nombre']);
@@ -202,27 +241,29 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final doc = filtered[index];
-                    final data = doc.data() as Map<String, dynamic>;
-                    final image = _obtenerImagenPrincipal(data);
-                    return ProductCard(
-                      title: data['nombre'] ?? '',
-                      price: '${data['precio']} MXN',
-                      image: image,
-                      isFavorite: isFavorite(data),
-                      productId: doc.id,
-                      onTap:
-                          () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => ProductDetailScreen(
-                                    productData: {'id': doc.id, ...data},
-                                  ),
-                            ),
-                          ),
-                      onFavoriteToggle: () => toggleFavorite(data),
-                      onAddToCart: () => _addProductToCart(data),
-                    );
+final data = doc.data() as Map<String, dynamic>;
+final productMap = {
+  'id': doc.id,
+  ...data,
+};
+final image = _obtenerImagenPrincipal(productMap);
+
+return ProductCard(
+  title: productMap['nombre'] ?? '',
+  price: '${productMap['precio']} MXN',
+  image: image,
+  isFavorite: isFavorite(productMap),
+  productId: doc.id,
+  onTap: () => Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ProductDetailScreen(productData: productMap),
+    ),
+  ),
+  onFavoriteToggle: () => toggleFavorite(productMap),
+  onAddToCart: () => _addProductToCart(productMap),
+);
+
                   },
                 );
               },

@@ -73,20 +73,24 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => ProductDetailScreen(
-                                  productData: {
-                                    ...product,
-                                    'id': product['id'] ?? 'sin-id',
-                                  },
-                                ),
-                          ),
-                        );
-                      },
+                      onTap: () async {
+  if (product['id'] == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Este producto no tiene ID válido')),
+    );
+    return;
+  }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => ProductDetailScreen(
+        productData: product,
+      ),
+    ),
+  );
+},
+
 
                       borderRadius: BorderRadius.circular(16),
                       child: Padding(
