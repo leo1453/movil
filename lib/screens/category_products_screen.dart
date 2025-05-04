@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/product_card.dart';
 import 'product_detail_screen.dart';
 
@@ -29,6 +30,27 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
     return favoriteProducts.any((p) => p['nombre'] == product['nombre']);
   }
 
+  Future<void> _addProductToCart(Map<String, dynamic> product) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .collection('carrito')
+          .add({
+        'nombre': product['nombre'],
+        'precio': product['precio'],
+        'imagen': _obtenerImagenPrincipal(product),
+        'cantidad': 1,
+        'fechaAgregado': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Producto agregado al carrito')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,11 +59,10 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         backgroundColor: Colors.deepPurple,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream:
-            FirebaseFirestore.instance
-                .collection('productos')
-                .where('categoria', isEqualTo: widget.categoriaSeleccionada)
-                .snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('productos')
+            .where('categoria', isEqualTo: widget.categoriaSeleccionada)
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -66,32 +87,34 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
               final producto = productos[index];
               final data = producto.data() as Map<String, dynamic>;
 
-              final imagenUrl = _obtenerImagenPrincipal(data);
+              final productMap = {
+                'id': producto.id,
+                ...data,
+              };
+
+              final imagenUrl = _obtenerImagenPrincipal(productMap);
 
               return ProductCard(
                 title: (data['nombre'] ?? 'Producto').toString(),
                 price: '${data['precio'] ?? 0} MXN',
                 image: imagenUrl,
-                isFavorite: isFavorite(data),
-                productId: producto.id, // 🔴 Aquí estaba faltando
+                isFavorite: isFavorite(productMap),
+                productId: producto.id,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ProductDetailScreen(
-                        productData: {
-                          ...data,
-                          'id': producto.id,
-                        },
+                        productData: productMap,
                       ),
                     ),
                   );
                 },
                 onFavoriteToggle: () {
-                  toggleFavorite(data);
+                  toggleFavorite(productMap);
                 },
+                onAddToCart: () => _addProductToCart(productMap),
               );
-
             },
           );
         },
