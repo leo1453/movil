@@ -16,14 +16,75 @@ class CategoryProductsScreen extends StatefulWidget {
 class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   List<Map<String, dynamic>> favoriteProducts = [];
 
-  void toggleFavorite(Map<String, dynamic> product) {
-    setState(() {
-      if (isFavorite(product)) {
-        favoriteProducts.removeWhere((p) => p['nombre'] == product['nombre']);
-      } else {
-        favoriteProducts.add(product);
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final favSnapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .collection('favoritos')
+          .get();
+
+      List<Map<String, dynamic>> favoritos = favSnapshot.docs
+          .map((doc) => {
+                'id': doc.id,
+                ...doc.data(),
+              })
+          .toList();
+
+      setState(() {
+        favoriteProducts = favoritos;
+      });
+    }
+  }
+
+  void toggleFavorite(Map<String, dynamic> product) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final favRef = FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(user.uid)
+        .collection('favoritos');
+
+    final exists = favoriteProducts.any((p) => p['nombre'] == product['nombre']);
+    final productWithId = Map<String, dynamic>.from(product);
+
+    if (!productWithId.containsKey('id') || productWithId['id'].toString().isEmpty) {
+      productWithId['id'] = product['id'] ?? product['productId'] ?? '';
+    }
+
+    if (exists) {
+      final snapshot =
+          await favRef.where('nombre', isEqualTo: product['nombre']).get();
+      for (var doc in snapshot.docs) {
+        await doc.reference.delete();
       }
-    });
+
+      setState(() {
+        favoriteProducts.removeWhere((p) => p['nombre'] == product['nombre']);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Producto eliminado de favoritos')),
+      );
+    } else {
+      await favRef.add(productWithId);
+
+      setState(() {
+        favoriteProducts.add(productWithId);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Producto añadido a favoritos')),
+      );
+    }
   }
 
   bool isFavorite(Map<String, dynamic> product) {
@@ -127,7 +188,8 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         data['imagenes'] is List &&
         data['imagenes'].isNotEmpty) {
       return data['imagenes'][0];
-    } else if (data['imagen'] != null && data['imagen'].toString().isNotEmpty) {
+    } else if (data['imagen'] != null &&
+        data['imagen'].toString().isNotEmpty) {
       return data['imagen'];
     } else {
       return '';

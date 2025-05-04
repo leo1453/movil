@@ -32,12 +32,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadCartItemCount() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final snapshot =
-          await FirebaseFirestore.instance
-              .collection('usuarios')
-              .doc(user.uid)
-              .collection('carrito')
-              .get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .collection('carrito')
+          .get();
       setState(() {
         _cartItemCount = snapshot.docs.length;
       });
@@ -45,55 +44,48 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadFavorites() async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    final favSnapshot = await FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(user.uid)
-        .collection('favoritos')
-        .get();
-
-    List<Map<String, dynamic>> actualizados = [];
-
-    for (var doc in favSnapshot.docs) {
-      final data = doc.data();
-
-      // Si ya tiene ID, lo usamos tal cual
-      if (data.containsKey('id') && data['id'].toString().isNotEmpty) {
-        actualizados.add(data);
-        continue;
-      }
-
-      // Si no tiene ID, intentamos buscarlo por nombre
-      final resultado = await FirebaseFirestore.instance
-          .collection('productos')
-          .where('nombre', isEqualTo: data['nombre'])
-          .limit(1)
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final favSnapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user.uid)
+          .collection('favoritos')
           .get();
 
-      if (resultado.docs.isNotEmpty) {
-        final productoOriginal = resultado.docs.first;
-        final newData = {
-          'id': productoOriginal.id,
-          ...data,
-        };
+      List<Map<String, dynamic>> actualizados = [];
 
-        // Opcional: puedes actualizar el doc también en Firestore
-        await doc.reference.set(newData);
+      for (var doc in favSnapshot.docs) {
+        final data = doc.data();
 
-        actualizados.add(newData);
-      } else {
-        // No se encontró el producto, dejamos el doc como está
-        actualizados.add(data);
+        if (data.containsKey('id') && data['id'].toString().isNotEmpty) {
+          actualizados.add(data);
+          continue;
+        }
+
+        final resultado = await FirebaseFirestore.instance
+            .collection('productos')
+            .where('nombre', isEqualTo: data['nombre'])
+            .limit(1)
+            .get();
+
+        if (resultado.docs.isNotEmpty) {
+          final productoOriginal = resultado.docs.first;
+          final newData = {
+            'id': productoOriginal.id,
+            ...data,
+          };
+          await doc.reference.set(newData);
+          actualizados.add(newData);
+        } else {
+          actualizados.add(data);
+        }
       }
+
+      setState(() {
+        favoriteProducts = actualizados;
+      });
     }
-
-    setState(() {
-      favoriteProducts = actualizados;
-    });
   }
-}
-
 
   void _incrementCartCount() {
     setState(() {
@@ -102,40 +94,44 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void toggleFavorite(Map<String, dynamic> product) async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-  final favRef = FirebaseFirestore.instance
-      .collection('usuarios')
-      .doc(user.uid)
-      .collection('favoritos');
+    final favRef = FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(user.uid)
+        .collection('favoritos');
 
-  final exists = favoriteProducts.any((p) => p['nombre'] == product['nombre']);
+    final exists =
+        favoriteProducts.any((p) => p['nombre'] == product['nombre']);
 
-  final productWithId = Map<String, dynamic>.from(product);
+    final productWithId = Map<String, dynamic>.from(product);
 
-  // ✅ aseguramos que tenga el ID correcto del producto original
-  if (!productWithId.containsKey('id') || productWithId['id'].toString().isEmpty) {
-    productWithId['id'] = product['productId'] ?? product['id'] ?? '';
+    if (!productWithId.containsKey('id') ||
+        productWithId['id'].toString().isEmpty) {
+      productWithId['id'] = product['productId'] ?? product['id'] ?? '';
+    }
+
+    if (exists) {
+      await favRef
+          .where('nombre', isEqualTo: product['nombre'])
+          .get()
+          .then((snapshot) {
+        for (var doc in snapshot.docs) {
+          doc.reference.delete();
+        }
+      });
+      setState(() {
+        favoriteProducts
+            .removeWhere((p) => p['nombre'] == product['nombre']);
+      });
+    } else {
+      await favRef.add(productWithId);
+      setState(() {
+        favoriteProducts.add(productWithId);
+      });
+    }
   }
-
-  if (exists) {
-    await favRef.where('nombre', isEqualTo: product['nombre']).get().then((snapshot) {
-      for (var doc in snapshot.docs) {
-        doc.reference.delete();
-      }
-    });
-    setState(() {
-      favoriteProducts.removeWhere((p) => p['nombre'] == product['nombre']);
-    });
-  } else {
-    await favRef.add(productWithId);
-    setState(() {
-      favoriteProducts.add(productWithId);
-    });
-  }
-}
-
 
   bool isFavorite(Map<String, dynamic> product) {
     return favoriteProducts.any((p) => p['nombre'] == product['nombre']);
@@ -153,11 +149,12 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               IconButton(
                 icon: Icon(Icons.shopping_cart),
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => CartScreen()),
+                    MaterialPageRoute(builder: (_) => CartScreen()),
                   );
+                  await _loadCartItemCount(); // opcional: recarga carrito
                 },
               ),
               if (_cartItemCount > 0)
@@ -189,18 +186,17 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: InputDecoration(
                 hintText: 'Buscar producto...',
                 prefixIcon: Icon(Icons.search),
-                suffixIcon:
-                    searchQuery.isNotEmpty
-                        ? IconButton(
-                          icon: Icon(Icons.clear),
-                          onPressed: () {
-                            setState(() {
-                              searchController.clear();
-                              searchQuery = '';
-                            });
-                          },
-                        )
-                        : null,
+                suffixIcon: searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            searchController.clear();
+                            searchQuery = '';
+                          });
+                        },
+                      )
+                    : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -214,21 +210,20 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream:
-                  FirebaseFirestore.instance
-                      .collection('productos')
-                      .snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('productos')
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData)
                   return Center(child: CircularProgressIndicator());
+
                 final productos = snapshot.data!.docs;
-                final filtered =
-                    productos.where((p) {
-                      final data = p.data() as Map<String, dynamic>;
-                      final nombre =
-                          (data['nombre'] ?? '').toString().toLowerCase();
-                      return nombre.contains(searchQuery);
-                    }).toList();
+                final filtered = productos.where((p) {
+                  final data = p.data() as Map<String, dynamic>;
+                  final nombre =
+                      (data['nombre'] ?? '').toString().toLowerCase();
+                  return nombre.contains(searchQuery);
+                }).toList();
 
                 return GridView.builder(
                   padding: EdgeInsets.all(8),
@@ -241,29 +236,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final doc = filtered[index];
-final data = doc.data() as Map<String, dynamic>;
-final productMap = {
-  'id': doc.id,
-  ...data,
-};
-final image = _obtenerImagenPrincipal(productMap);
+                    final data = doc.data() as Map<String, dynamic>;
+                    final productMap = {
+                      'id': doc.id,
+                      ...data,
+                    };
+                    final image = _obtenerImagenPrincipal(productMap);
 
-return ProductCard(
-  title: productMap['nombre'] ?? '',
-  price: '${productMap['precio']} MXN',
-  image: image,
-  isFavorite: isFavorite(productMap),
-  productId: doc.id,
-  onTap: () => Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => ProductDetailScreen(productData: productMap),
-    ),
-  ),
-  onFavoriteToggle: () => toggleFavorite(productMap),
-  onAddToCart: () => _addProductToCart(productMap),
-);
-
+                    return ProductCard(
+                      title: productMap['nombre'] ?? '',
+                      price: '${productMap['precio']} MXN',
+                      image: image,
+                      isFavorite: isFavorite(productMap),
+                      productId: doc.id,
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ProductDetailScreen(productData: productMap),
+                          ),
+                        );
+                        await _loadFavorites(); // recarga favoritos al volver
+                      },
+                      onFavoriteToggle: () => toggleFavorite(productMap),
+                      onAddToCart: () => _addProductToCart(productMap),
+                    );
                   },
                 );
               },
@@ -275,11 +273,12 @@ return ProductCard(
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.deepPurple,
         child: Icon(Icons.add),
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => AddProductScreen()),
+            MaterialPageRoute(builder: (_) => AddProductScreen()),
           );
+          await _loadFavorites(); // opcional: recarga después de añadir
         },
       ),
     );
@@ -293,17 +292,17 @@ return ProductCard(
           .doc(user.uid)
           .collection('carrito')
           .add({
-            'nombre': product['nombre'],
-            'precio': product['precio'],
-            'imagen': _obtenerImagenPrincipal(product),
-            'cantidad': 1,
-            'fechaAgregado': FieldValue.serverTimestamp(),
-          });
+        'nombre': product['nombre'],
+        'precio': product['precio'],
+        'imagen': _obtenerImagenPrincipal(product),
+        'cantidad': 1,
+        'fechaAgregado': FieldValue.serverTimestamp(),
+      });
 
       _incrementCartCount();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Producto agregado al carrito')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Producto agregado al carrito')),
+      );
     }
   }
 
@@ -312,7 +311,8 @@ return ProductCard(
         data['imagenes'] is List &&
         data['imagenes'].isNotEmpty) {
       return data['imagenes'][0];
-    } else if (data['imagen'] != null && data['imagen'].toString().isNotEmpty) {
+    } else if (data['imagen'] != null &&
+        data['imagen'].toString().isNotEmpty) {
       return data['imagen'];
     } else {
       return '';
@@ -326,7 +326,6 @@ return ProductCard(
           DrawerHeader(
             decoration: BoxDecoration(color: Colors.deepPurple),
             child: Container(
-              width: double.infinity,
               alignment: Alignment.centerLeft,
               child: Text(
                 'Menú',
@@ -350,7 +349,7 @@ return ProductCard(
             context,
             'Favoritos',
             Icons.favorite,
-            FavoritesScreen(favoriteProducts: favoriteProducts),
+            FavoritesScreen(),
           ),
           _buildDrawerItem(
             context,
@@ -395,11 +394,13 @@ return ProductCard(
     return ListTile(
       leading: Icon(icon, color: Colors.deepPurple),
       title: Text(title, style: TextStyle(color: Colors.deepPurple)),
-      onTap:
-          () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => screen),
-          ),
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => screen),
+        );
+        await _loadFavorites(); // 🔄 recarga favoritos al volver
+      },
     );
   }
 }
