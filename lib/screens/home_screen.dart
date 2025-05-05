@@ -32,11 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadCartItemCount() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(user.uid)
-          .collection('carrito')
-          .get();
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(user.uid)
+              .collection('carrito')
+              .get();
       setState(() {
         _cartItemCount = snapshot.docs.length;
       });
@@ -46,11 +47,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadFavorites() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final favSnapshot = await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(user.uid)
-          .collection('favoritos')
-          .get();
+      final favSnapshot =
+          await FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(user.uid)
+              .collection('favoritos')
+              .get();
 
       List<Map<String, dynamic>> actualizados = [];
 
@@ -62,18 +64,16 @@ class _HomeScreenState extends State<HomeScreen> {
           continue;
         }
 
-        final resultado = await FirebaseFirestore.instance
-            .collection('productos')
-            .where('nombre', isEqualTo: data['nombre'])
-            .limit(1)
-            .get();
+        final resultado =
+            await FirebaseFirestore.instance
+                .collection('productos')
+                .where('nombre', isEqualTo: data['nombre'])
+                .limit(1)
+                .get();
 
         if (resultado.docs.isNotEmpty) {
           final productoOriginal = resultado.docs.first;
-          final newData = {
-            'id': productoOriginal.id,
-            ...data,
-          };
+          final newData = {'id': productoOriginal.id, ...data};
           await doc.reference.set(newData);
           actualizados.add(newData);
         } else {
@@ -102,8 +102,9 @@ class _HomeScreenState extends State<HomeScreen> {
         .doc(user.uid)
         .collection('favoritos');
 
-    final exists =
-        favoriteProducts.any((p) => p['nombre'] == product['nombre']);
+    final exists = favoriteProducts.any(
+      (p) => p['nombre'] == product['nombre'],
+    );
 
     final productWithId = Map<String, dynamic>.from(product);
 
@@ -113,17 +114,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (exists) {
-      await favRef
-          .where('nombre', isEqualTo: product['nombre'])
-          .get()
-          .then((snapshot) {
+      await favRef.where('nombre', isEqualTo: product['nombre']).get().then((
+        snapshot,
+      ) {
         for (var doc in snapshot.docs) {
           doc.reference.delete();
         }
       });
       setState(() {
-        favoriteProducts
-            .removeWhere((p) => p['nombre'] == product['nombre']);
+        favoriteProducts.removeWhere((p) => p['nombre'] == product['nombre']);
       });
     } else {
       await favRef.add(productWithId);
@@ -145,16 +144,27 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.deepPurple,
         iconTheme: IconThemeData(color: Colors.white),
         actions: [
+          IconButton(
+            icon: Icon(Icons.add, color: Colors.white),
+            tooltip: 'Agregar producto',
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => AddProductScreen()),
+              );
+              await _loadFavorites(); // opcional: recarga favoritos al volver
+            },
+          ),
           Stack(
             children: [
               IconButton(
-                icon: Icon(Icons.shopping_cart),
+                icon: Icon(Icons.shopping_cart, color: Colors.white),
                 onPressed: () async {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => CartScreen()),
                   );
-                  await _loadCartItemCount(); // opcional: recarga carrito
+                  await _loadCartItemCount(); // recarga carrito al volver
                 },
               ),
               if (_cartItemCount > 0)
@@ -177,6 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+
       body: Column(
         children: [
           Padding(
@@ -186,17 +197,18 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: InputDecoration(
                 hintText: 'Buscar producto...',
                 prefixIcon: Icon(Icons.search),
-                suffixIcon: searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            searchController.clear();
-                            searchQuery = '';
-                          });
-                        },
-                      )
-                    : null,
+                suffixIcon:
+                    searchQuery.isNotEmpty
+                        ? IconButton(
+                          icon: Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              searchController.clear();
+                              searchQuery = '';
+                            });
+                          },
+                        )
+                        : null,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -210,20 +222,22 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('productos')
-                  .snapshots(),
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('productos')
+                      .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData)
                   return Center(child: CircularProgressIndicator());
 
                 final productos = snapshot.data!.docs;
-                final filtered = productos.where((p) {
-                  final data = p.data() as Map<String, dynamic>;
-                  final nombre =
-                      (data['nombre'] ?? '').toString().toLowerCase();
-                  return nombre.contains(searchQuery);
-                }).toList();
+                final filtered =
+                    productos.where((p) {
+                      final data = p.data() as Map<String, dynamic>;
+                      final nombre =
+                          (data['nombre'] ?? '').toString().toLowerCase();
+                      return nombre.contains(searchQuery);
+                    }).toList();
 
                 return GridView.builder(
                   padding: EdgeInsets.all(8),
@@ -237,10 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     final doc = filtered[index];
                     final data = doc.data() as Map<String, dynamic>;
-                    final productMap = {
-                      'id': doc.id,
-                      ...data,
-                    };
+                    final productMap = {'id': doc.id, ...data};
                     final image = _obtenerImagenPrincipal(productMap);
 
                     return ProductCard(
@@ -253,8 +264,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                ProductDetailScreen(productData: productMap),
+                            builder:
+                                (_) => ProductDetailScreen(
+                                  productData: productMap,
+                                ),
                           ),
                         );
                         await _loadFavorites(); // recarga favoritos al volver
@@ -270,17 +283,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       drawer: _buildDrawer(context),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.deepPurple,
-        child: Icon(Icons.add),
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => AddProductScreen()),
-          );
-          await _loadFavorites(); // opcional: recarga después de añadir
-        },
-      ),
     );
   }
 
@@ -292,17 +294,17 @@ class _HomeScreenState extends State<HomeScreen> {
           .doc(user.uid)
           .collection('carrito')
           .add({
-        'nombre': product['nombre'],
-        'precio': product['precio'],
-        'imagen': _obtenerImagenPrincipal(product),
-        'cantidad': 1,
-        'fechaAgregado': FieldValue.serverTimestamp(),
-      });
+            'nombre': product['nombre'],
+            'precio': product['precio'],
+            'imagen': _obtenerImagenPrincipal(product),
+            'cantidad': 1,
+            'fechaAgregado': FieldValue.serverTimestamp(),
+          });
 
       _incrementCartCount();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Producto agregado al carrito')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Producto agregado al carrito')));
     }
   }
 
@@ -311,8 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
         data['imagenes'] is List &&
         data['imagenes'].isNotEmpty) {
       return data['imagenes'][0];
-    } else if (data['imagen'] != null &&
-        data['imagen'].toString().isNotEmpty) {
+    } else if (data['imagen'] != null && data['imagen'].toString().isNotEmpty) {
       return data['imagen'];
     } else {
       return '';
