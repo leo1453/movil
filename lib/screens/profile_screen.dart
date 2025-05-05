@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -10,11 +11,12 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controladores
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _postalCodeController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
 
   final User? user = FirebaseAuth.instance.currentUser;
 
@@ -28,7 +30,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (user != null) {
       _emailController.text = user!.email ?? '';
 
-      // Intentamos traer los datos extra de Firestore
       final snapshot =
           await FirebaseFirestore.instance
               .collection('usuarios')
@@ -40,6 +41,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _nameController.text = data?['nombre'] ?? '';
         _addressController.text = data?['direccion'] ?? '';
         _phoneController.text = data?['telefono'] ?? '';
+        _postalCodeController.text = data?['codigoPostal'] ?? '';
+        _cityController.text = data?['ciudad'] ?? '';
       }
     }
   }
@@ -53,8 +56,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'nombre': _nameController.text,
             'direccion': _addressController.text,
             'telefono': _phoneController.text,
+            'codigoPostal': _postalCodeController.text,
+            'ciudad': _cityController.text,
             'email': _emailController.text,
-          }, SetOptions(merge: true)); // Actualizar sin borrar otros datos
+          }, SetOptions(merge: true));
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Perfil actualizado correctamente')),
@@ -67,6 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required TextEditingController controller,
     required IconData icon,
     TextInputType inputType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Padding(
@@ -74,6 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: TextFormField(
         controller: controller,
         keyboardType: inputType,
+        inputFormatters: inputFormatters,
         validator:
             validator ??
             (value) {
@@ -146,10 +153,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: Icons.home,
                       ),
                       buildTextField(
+                        label: 'Ciudad',
+                        controller: _cityController,
+                        icon: Icons.location_city,
+                      ),
+                      buildTextField(
+                        label: 'Código Postal',
+                        controller: _postalCodeController,
+                        icon: Icons.markunread_mailbox,
+                        inputType: TextInputType.number,
+                        inputFormatters: [LengthLimitingTextInputFormatter(5)],
+                        validator: (value) {
+                          if (value == null ||
+                              value.isEmpty ||
+                              value.length != 5) {
+                            return 'Código postal inválido';
+                          }
+                          return null;
+                        },
+                      ),
+                      buildTextField(
                         label: 'Teléfono',
                         controller: _phoneController,
                         icon: Icons.phone,
                         inputType: TextInputType.phone,
+                        inputFormatters: [LengthLimitingTextInputFormatter(10)],
+                        validator: (value) {
+                          if (value == null || value.length != 10) {
+                            return 'Teléfono inválido';
+                          }
+                          return null;
+                        },
                       ),
                       SizedBox(height: 24),
                       SizedBox(
