@@ -156,6 +156,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     required TextEditingController controller,
     TextInputType inputType = TextInputType.text,
     String? Function(String?)? validator,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -169,6 +170,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 return 'Este campo es obligatorio';
               return null;
             },
+        inputFormatters: inputFormatters,
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
@@ -191,6 +193,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             icon: Icons.credit_card,
             controller: _cardNumberController,
             inputType: TextInputType.number,
+            inputFormatters: [LengthLimitingTextInputFormatter(16)],
             validator:
                 (v) =>
                     v == null || v.length != 16
@@ -203,6 +206,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             icon: Icons.date_range,
             controller: _expiryDateController,
             inputType: TextInputType.number,
+            inputFormatters: [LengthLimitingTextInputFormatter(4)],
             validator: (v) {
               if (v == null || v.length != 4)
                 return 'Debe tener 4 dígitos (MMAA)';
@@ -211,13 +215,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
               return null;
             },
           ),
-
           buildTextField(
             label: 'CVV',
             hint: 'Ej. 123',
             icon: Icons.lock,
             controller: _cvvController,
             inputType: TextInputType.number,
+            inputFormatters: [LengthLimitingTextInputFormatter(3)],
             validator:
                 (v) =>
                     v == null || v.length != 3 ? 'Debe tener 3 dígitos' : null,
@@ -271,13 +275,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 icon: Icons.phone,
                 controller: _phoneController,
                 inputType: TextInputType.phone,
+                inputFormatters: [LengthLimitingTextInputFormatter(10)],
                 validator:
                     (v) =>
                         v == null || !RegExp(r'^\d{10}$').hasMatch(v)
                             ? 'Teléfono inválido'
                             : null,
               ),
-
               buildTextField(
                 label: 'Dirección',
                 hint: 'Calle, número, colonia',
@@ -296,6 +300,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 icon: Icons.markunread_mailbox,
                 controller: _postalCodeController,
                 inputType: TextInputType.number,
+                inputFormatters: [LengthLimitingTextInputFormatter(5)],
                 validator:
                     (v) => v == null || v.length < 4 ? 'Código inválido' : null,
               ),
