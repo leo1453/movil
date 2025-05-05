@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
+import 'package:proyecto/screens/home_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cartProducts;
@@ -130,11 +131,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 ),
                 actions: [
                   TextButton(
-                    onPressed:
-                        () => Navigator.popUntil(
-                          context,
-                          (route) => route.isFirst,
-                        ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => HomeScreen()),
+                        (route) => false,
+                      );
+                    },
                     child: Text('Volver al inicio'),
                   ),
                 ],
