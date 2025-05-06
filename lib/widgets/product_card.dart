@@ -9,7 +9,8 @@ class ProductCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
   final VoidCallback? onAddToCart;
-  final String productId; // 🔴 Se necesita pasar el ID desde HomeScreen
+  final String productId;
+  final int stock;
 
   ProductCard({
     required this.title,
@@ -19,6 +20,7 @@ class ProductCard extends StatefulWidget {
     required this.isFavorite,
     required this.onFavoriteToggle,
     required this.productId,
+    required this.stock,
     this.onAddToCart,
   });
 
@@ -33,29 +35,6 @@ class _ProductCardState extends State<ProductCard> {
   void _onTapUp(TapUpDetails details) => setState(() => _scale = 1.0);
   void _onTapCancel() => setState(() => _scale = 1.0);
 
-  Future<double> _obtenerPromedioRating() async {
-    final comentarios = await FirebaseFirestore.instance
-        .collection('productos')
-        .doc(widget.productId)
-        .collection('comentarios')
-        .get();
-
-    if (comentarios.docs.isEmpty) return 0;
-
-    double suma = 0;
-    int total = 0;
-
-    for (var doc in comentarios.docs) {
-      final data = doc.data();
-      if (data.containsKey('rating')) {
-        suma += (data['rating'] ?? 0).toDouble();
-        total++;
-      }
-    }
-
-    return total > 0 ? suma / total : 0;
-  }
-
   @override
   Widget build(BuildContext context) {
     final bool hasValidImage = widget.image.trim().startsWith('http');
@@ -67,7 +46,7 @@ class _ProductCardState extends State<ProductCard> {
       onTapCancel: _onTapCancel,
       child: AnimatedScale(
         scale: _scale,
-        duration: Duration(milliseconds: 150), 
+        duration: Duration(milliseconds: 150),
         child: Stack(
           children: [
             Container(
@@ -119,56 +98,54 @@ class _ProductCardState extends State<ProductCard> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           SizedBox(height: 4),
-                    StreamBuilder<QuerySnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('productos')
-                              .doc(widget.productId)
-                              .collection('comentarios')
-                              .snapshots(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('productos')
+                                .doc(widget.productId)
+                                .collection('comentarios')
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                return Row(
+                                  children: [
+                                    ...List.generate(5, (_) => Icon(Icons.star_border, size: 14, color: Colors.amber)),
+                                    SizedBox(width: 4),
+                                    Text('0.0/5', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                  ],
+                                );
+                              }
+
+                              final docs = snapshot.data!.docs;
+                              double suma = 0;
+                              int total = 0;
+
+                              for (var doc in docs) {
+                                final data = doc.data() as Map<String, dynamic>;
+                                if (data.containsKey('rating')) {
+                                  suma += (data['rating'] ?? 0).toDouble();
+                                  total++;
+                                }
+                              }
+
+                              final promedio = total > 0 ? suma / total : 0;
+
                               return Row(
                                 children: [
-                                  ...List.generate(5, (_) => Icon(Icons.star_border, size: 14, color: Colors.amber)),
+                                  ...List.generate(5, (index) {
+                                    if (promedio >= index + 1) {
+                                      return Icon(Icons.star, size: 14, color: Colors.amber);
+                                    } else if (promedio >= index + 0.5) {
+                                      return Icon(Icons.star_half, size: 14, color: Colors.amber);
+                                    } else {
+                                      return Icon(Icons.star_border, size: 14, color: Colors.amber);
+                                    }
+                                  }),
                                   SizedBox(width: 4),
-                                  Text('0.0/5', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                                  Text('${promedio.toStringAsFixed(1)}/5', style: TextStyle(fontSize: 12, color: Colors.black54)),
                                 ],
                               );
-                            }
-
-                            final docs = snapshot.data!.docs;
-                            double suma = 0;
-                            int total = 0;
-
-                            for (var doc in docs) {
-                              final data = doc.data() as Map<String, dynamic>;
-                              if (data.containsKey('rating')) {
-                                suma += (data['rating'] ?? 0).toDouble();
-                                total++;
-                              }
-                            }
-
-                            final promedio = total > 0 ? suma / total : 0;
-
-                            return Row(
-                              children: [
-                                ...List.generate(5, (index) {
-                                  if (promedio >= index + 1) {
-                                    return Icon(Icons.star, size: 14, color: Colors.amber);
-                                  } else if (promedio >= index + 0.5) {
-                                    return Icon(Icons.star_half, size: 14, color: Colors.amber);
-                                  } else {
-                                    return Icon(Icons.star_border, size: 14, color: Colors.amber);
-                                  }
-                                }),
-                                SizedBox(width: 4),
-                                Text('${promedio.toStringAsFixed(1)}/5', style: TextStyle(fontSize: 12, color: Colors.black54)),
-                              ],
-                            );
-                          },
-                        ),
-
-                          //SizedBox(height: 2),
+                            },
+                          ),
                           Row(
                             children: [
                               Expanded(
@@ -180,9 +157,10 @@ class _ProductCardState extends State<ProductCard> {
                               ),
                               IconButton(
                                 icon: Icon(Icons.add_shopping_cart),
-                                color: Colors.deepPurple,
+                                color: widget.stock > 0 ? Colors.deepPurple : Colors.grey,
                                 iconSize: 20,
-                                onPressed: widget.onAddToCart,
+                                onPressed: widget.stock > 0 ? widget.onAddToCart : null,
+                                tooltip: widget.stock > 0 ? 'Agregar al carrito' : 'Sin stock',
                               ),
                             ],
                           ),
@@ -193,6 +171,24 @@ class _ProductCardState extends State<ProductCard> {
                 ],
               ),
             ),
+            // Etiqueta "Sin stock"
+            if (widget.stock == 0)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Sin stock',
+                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+              ),
+            // Icono de favorito
             Positioned(
               top: 8,
               right: 8,

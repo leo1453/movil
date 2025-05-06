@@ -255,26 +255,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     final image = _obtenerImagenPrincipal(productMap);
 
                     return ProductCard(
-                      title: productMap['nombre'] ?? '',
-                      price: '${productMap['precio']} MXN',
-                      image: image,
-                      isFavorite: isFavorite(productMap),
-                      productId: doc.id,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (_) => ProductDetailScreen(
-                                  productData: productMap,
-                                ),
-                          ),
-                        );
-                        await _loadFavorites(); // recarga favoritos al volver
-                      },
-                      onFavoriteToggle: () => toggleFavorite(productMap),
-                      onAddToCart: () => _addProductToCart(productMap),
-                    );
+  title: productMap['nombre'] ?? '',
+  price: '${productMap['precio']} MXN',
+  image: image,
+  isFavorite: isFavorite(productMap),
+  productId: doc.id,
+  stock: productMap['stock'] ?? 0, // ✅ ESTA LÍNEA ES LA CLAVE
+  onTap: () async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductDetailScreen(productData: productMap),
+      ),
+    );
+    await _loadFavorites();
+  },
+  onFavoriteToggle: () => toggleFavorite(productMap),
+  onAddToCart: () => _addProductToCart(productMap),
+);
+
                   },
                 );
               },

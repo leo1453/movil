@@ -521,124 +521,160 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   );
 }
 
+Widget _buildProductosSimilares(String categoria, String productoId) {
+  return FutureBuilder<QuerySnapshot>(
+    future: FirebaseFirestore.instance
+        .collection('productos')
+        .where('categoria', isEqualTo: categoria)
+        .get(),
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) return SizedBox();
+      final productos = snapshot.data!.docs
+          .where((doc) => doc.id != productoId)
+          .toList();
 
-  Widget _buildProductosSimilares(String categoria, String productoId) {
-    return FutureBuilder<QuerySnapshot>(
-      future:
-          FirebaseFirestore.instance
-              .collection('productos')
-              .where('categoria', isEqualTo: categoria)
-              .get(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return SizedBox();
-        final productos =
-            snapshot.data!.docs.where((doc) => doc.id != productoId).toList();
+      if (productos.isEmpty) return SizedBox();
 
-        if (productos.isEmpty) return SizedBox();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'También podría interesarte',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
-              ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'También podría interesarte',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepPurple,
             ),
-            SizedBox(height: 16),
-            SizedBox(
-              height: 220,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: productos.length,
-                itemBuilder: (context, index) {
-                  final data = productos[index].data() as Map<String, dynamic>;
-                  final imagenPrincipal = _obtenerImagenPrincipal(data);
+          ),
+          SizedBox(height: 16),
+          SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: productos.length,
+              itemBuilder: (context, index) {
+                final data = productos[index].data() as Map<String, dynamic>;
+                final imagenPrincipal = _obtenerImagenPrincipal(data);
+                final stock = data['stock'] ?? 0;
+                final bool sinStock = stock == 0;
 
-                  return GestureDetector(
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ProductDetailScreen(
-                          productData: {
-                            ...data,
-                            'id': productos[index].id,
-                          },
+                return GestureDetector(
+                  onTap: sinStock
+                      ? null
+                      : () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailScreen(
+                                productData: {
+                                  ...data,
+                                  'id': productos[index].id,
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                  child: Opacity(
+                    opacity: sinStock ? 0.6 : 1.0,
+                    child: Container(
+                      width: 160,
+                      margin: EdgeInsets.only(right: 12),
+                      child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 3,
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Stack(
+                              children: [
+                                Container(
+                                  height: 140,
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(12)),
+                                  ),
+                                  child: imagenPrincipal.isNotEmpty
+                                      ? Image.network(
+                                          imagenPrincipal,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, __, ___) =>
+                                              Icon(Icons.broken_image,
+                                                  size: 50),
+                                        )
+                                      : Center(
+                                          child: Icon(
+                                              Icons.image_not_supported,
+                                              size: 50)),
+                                ),
+                                if (sinStock)
+                                  Positioned(
+                                    bottom: 6,
+                                    left: 6,
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent,
+                                        borderRadius:
+                                            BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        'No disponible',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    data['nombre'] ?? '',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    '${data['precio']} MXN',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.deepPurple,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  },
-                  child: Container(
-                    width: 160,
-                    margin: EdgeInsets.only(right: 12),
-                    child: Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 3,
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                        Container(
-                  height: 140, // altura fija para mantener uniformidad
-                  width: double.infinity,
-                  padding: EdgeInsets.all(8), // pequeño espacio alrededor de la imagen
-                  decoration: BoxDecoration(
-                    color: Colors.white, // o gris claro si prefieres
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                    ),
                   ),
-                  child: imagenPrincipal.isNotEmpty
-                      ? Image.network(
-                          imagenPrincipal,
-                          fit: BoxFit.contain, // 🔄 La imagen se adapta sin deformarse
-                          errorBuilder: (_, __, ___) =>
-                              Icon(Icons.broken_image, size: 50),
-                        )
-                      : Center(child: Icon(Icons.image_not_supported, size: 50)),
-                ),
-
-
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data['nombre'] ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  '${data['precio']} MXN',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple,
-                  ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ],
-      ),
-    ),
-  ),
-);
+      );
+    },
+  );
+}
 
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
+ 
   Future<double> _obtenerPromedioRating() async {
     final comentariosSnapshot =
         await FirebaseFirestore.instance

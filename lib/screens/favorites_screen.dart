@@ -84,104 +84,137 @@ class FavoritesScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final data = docs[index].data() as Map<String, dynamic>;
               final imagenUrl = _obtenerImagenPrincipal(data);
+              final productId = data['id'];
 
-              return Card(
-                margin: EdgeInsets.only(bottom: 16),
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: InkWell(
-                  onTap: () {
-                    if (data['id'] == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Este producto no tiene ID válido')),
-                      );
-                      return;
-                    }
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ProductDetailScreen(productData: data),
-                      ),
+              return FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('productos')
+                    .doc(productId)
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Card(
+                      margin: EdgeInsets.only(bottom: 16),
+                      child: ListTile(title: Text('Cargando...')),
                     );
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                      ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        width: 70,
-                        height: 70,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                        ),
-                        child: imagenUrl.isNotEmpty
-                            ? FittedBox(
-                                fit: BoxFit.cover,
-                                clipBehavior: Clip.hardEdge,
-                                child: Image.network(
-                                  imagenUrl,
-                                  width: 70,
-                                  height: 70,
-                                  errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image, size: 40, color: Colors.grey),
-                                ),
-                              )
-                            : Center(
-                                child: Icon(
-                                  Icons.image_not_supported,
-                                  size: 40,
-                                  color: Colors.grey,
-                                ),
+                  }
+
+                  if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return Card(
+                      margin: EdgeInsets.only(bottom: 16),
+                      child: ListTile(title: Text('Producto no disponible')),
+                    );
+                  }
+
+                  final productoData =
+                      snapshot.data!.data() as Map<String, dynamic>;
+                  final stock = productoData['stock'] ?? 0;
+
+                  return Card(
+                    margin: EdgeInsets.only(bottom: 16),
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        if (data['id'] == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Este producto no tiene ID válido')),
+                          );
+                          return;
+                        }
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProductDetailScreen(productData: data),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                width: 70,
+                                height: 70,
+                                decoration: BoxDecoration(color: Colors.white),
+                                child: imagenUrl.isNotEmpty
+                                    ? FittedBox(
+                                        fit: BoxFit.cover,
+                                        clipBehavior: Clip.hardEdge,
+                                        child: Image.network(
+                                          imagenUrl,
+                                          width: 70,
+                                          height: 70,
+                                          errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          size: 40,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
                               ),
+                            ),
+                            SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    data['nombre'] ?? '',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    '${data['precio']} MXN',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.deepPurple,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (stock == 0)
+                                    Text(
+                                      'No disponible',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.favorite, color: Colors.redAccent),
+                              tooltip: 'Eliminar de favoritos',
+                              onPressed: () async {
+                                await _removeFavorite(data['nombre']);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Producto eliminado de favoritos')),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                data['nombre'] ?? '',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              SizedBox(height: 6),
-                              Text(
-                                '${data['precio']} MXN',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.deepPurple,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.favorite, color: Colors.redAccent),
-                          tooltip: 'Eliminar de favoritos',
-                          onPressed: () async {
-                            await _removeFavorite(data['nombre']);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Producto eliminado de favoritos')),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                  );
+                },
               );
             },
           );

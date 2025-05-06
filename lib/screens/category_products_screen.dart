@@ -156,26 +156,28 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
               final imagenUrl = _obtenerImagenPrincipal(productMap);
 
               return ProductCard(
-                title: (data['nombre'] ?? 'Producto').toString(),
-                price: '${data['precio'] ?? 0} MXN',
-                image: imagenUrl,
-                isFavorite: isFavorite(productMap),
-                productId: producto.id,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProductDetailScreen(
-                        productData: productMap,
-                      ),
-                    ),
-                  );
-                },
-                onFavoriteToggle: () {
-                  toggleFavorite(productMap);
-                },
-                onAddToCart: () => _addProductToCart(productMap),
-              );
+  title: (data['nombre'] ?? 'Producto').toString(),
+  price: '${data['precio'] ?? 0} MXN',
+  image: imagenUrl,
+  isFavorite: isFavorite(productMap),
+  productId: producto.id,
+  stock: data['stock'] ?? 0, // ✅ Línea clave
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetailScreen(
+          productData: productMap,
+        ),
+      ),
+    );
+  },
+  onFavoriteToggle: () {
+    toggleFavorite(productMap);
+  },
+  onAddToCart: () => _addProductToCart(productMap),
+);
+
             },
           );
         },
