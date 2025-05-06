@@ -92,7 +92,7 @@ class _ProductCardState extends State<ProductCard> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                       child: Container(
-                        color: Colors.grey[100],
+                        color: Colors.white,
                         child: hasValidImage
                             ? Image.network(
                                 widget.image,

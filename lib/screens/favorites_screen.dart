@@ -113,28 +113,35 @@ class FavoritesScreen extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            width: 70,
-                            height: 70,
-                            color: Colors.grey[100],
-                            child: imagenUrl.isNotEmpty
-                                ? Image.network(
-                                    imagenUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        Icon(Icons.broken_image, size: 40, color: Colors.grey),
-                                  )
-                                : Center(
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      size: 40,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                          ),
+                      ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
                         ),
+                        child: imagenUrl.isNotEmpty
+                            ? FittedBox(
+                                fit: BoxFit.cover,
+                                clipBehavior: Clip.hardEdge,
+                                child: Image.network(
+                                  imagenUrl,
+                                  width: 70,
+                                  height: 70,
+                                  errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                                ),
+                              )
+                            : Center(
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 40,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                      ),
+                    ),
+
                         SizedBox(width: 16),
                         Expanded(
                           child: Column(

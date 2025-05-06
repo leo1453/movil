@@ -155,6 +155,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             _buildDetailRow('Color', product['color']),
             _buildDetailRow('Dimensiones', product['dimensiones']),
             _buildDetailRow('Peso', product['peso']),
+            _buildDetailRow('Stock', product['stock']),
             SizedBox(height: 30),
             _buildSectionTitle('Compra'),
             _buildCantidadSelector(),
@@ -383,54 +384,60 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildCantidadSelector() {
-    return Row(
-      children: [
-        ElevatedButton(
-          onPressed: _quantity > 1 ? () => setState(() => _quantity--) : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.deepPurple,
-            shape: CircleBorder(),
-            padding: EdgeInsets.all(12),
-          ),
-          child: Icon(Icons.remove, size: 20, color: Colors.white),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('$_quantity', style: TextStyle(fontSize: 18)),
-        ),
-        ElevatedButton(
-          onPressed: () => setState(() => _quantity++),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.deepPurple,
-            shape: CircleBorder(),
-            padding: EdgeInsets.all(12),
-          ),
-          child: Icon(Icons.add, size: 20, color: Colors.white),
-        ),
-      ],
-    );
-  }
+  final int stock = int.tryParse(widget.productData['stock'].toString()) ?? 0;
 
-  Widget _buildAgregarAlCarrito() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
+  return Row(
+    children: [
+      ElevatedButton(
+        onPressed: (_quantity > 1 && stock > 0) ? () => setState(() => _quantity--) : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.deepPurple,
-          padding: EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: CircleBorder(),
+          padding: EdgeInsets.all(12),
         ),
-        icon: Icon(Icons.shopping_cart_outlined, color: Colors.white),
-        label: Text(
-          'Agregar al carrito',
-          style: TextStyle(color: Colors.white, fontSize: 18),
-        ),
-        onPressed: _addToCart,
+        child: Icon(Icons.remove, size: 20, color: Colors.white),
       ),
-    );
-  }
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Text('$_quantity', style: TextStyle(fontSize: 18)),
+      ),
+      ElevatedButton(
+        onPressed: (_quantity < stock) ? () => setState(() => _quantity++) : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.deepPurple,
+          shape: CircleBorder(),
+          padding: EdgeInsets.all(12),
+        ),
+        child: Icon(Icons.add, size: 20, color: Colors.white),
+      ),
+    ],
+  );
+}
+
+
+  Widget _buildAgregarAlCarrito() {
+  final int stock = int.tryParse(widget.productData['stock'].toString()) ?? 0;
+  final bool hayStock = stock > 0;
+
+  return SizedBox(
+    width: double.infinity,
+    child: ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: hayStock ? Colors.deepPurple : Colors.grey,
+        padding: EdgeInsets.symmetric(vertical: 18),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      icon: Icon(Icons.shopping_cart_outlined, color: Colors.white),
+      label: Text(
+        hayStock ? 'Agregar al carrito' : 'Sin stock',
+        style: TextStyle(color: Colors.white, fontSize: 18),
+      ),
+      onPressed: hayStock ? _addToCart : null, // 🚫 Desactiva si no hay stock
+    ),
+  );
+}
 
   void _addToCart() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -489,14 +496,31 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildDetailRow(String label, dynamic value) {
-    if (value == null || (value is String && value.isEmpty))
-      return SizedBox.shrink();
+ Widget _buildDetailRow(String label, dynamic value) {
+  if (value == null || (value is String && value.toString().isEmpty)) return SizedBox.shrink();
+
+  if (label.toLowerCase().contains('stock')) {
+    final int stockValue = int.tryParse(value.toString()) ?? 0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Text('$label: $value', style: TextStyle(fontSize: 16)),
+      child: Text(
+        '$label: $stockValue unidades',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: stockValue > 0 ? Colors.green : Colors.red,
+        ),
+      ),
     );
   }
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4.0),
+    child: Text('$label: $value', style: TextStyle(fontSize: 16)),
+  );
+}
+
 
   Widget _buildProductosSimilares(String categoria, String productoId) {
     return FutureBuilder<QuerySnapshot>(
@@ -534,77 +558,78 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   final imagenPrincipal = _obtenerImagenPrincipal(data);
 
                   return GestureDetector(
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) => ProductDetailScreen(
-                                productData: {
-                                  ...data,
-                                  'id': productos[index].id,
-                                },
-                              ),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      width: 160,
-                      margin: EdgeInsets.only(right: 12),
-                      child: Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(12),
-                                ),
-                                child:
-                                    imagenPrincipal.isNotEmpty
-                                        ? Image.network(
-                                          imagenPrincipal,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (_, __, ___) =>
-                                                  Icon(Icons.broken_image),
-                                        )
-                                        : Icon(Icons.broken_image, size: 50),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    data['nombre'] ?? '',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    '${data['precio']} MXN',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.deepPurple,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProductDetailScreen(
+                          productData: {
+                            ...data,
+                            'id': productos[index].id,
+                          },
                         ),
                       ),
-                    ),
-                  );
+                    );
+                  },
+                  child: Container(
+                    width: 160,
+                    margin: EdgeInsets.only(right: 12),
+                    child: Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 3,
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                        Container(
+                  height: 140, // altura fija para mantener uniformidad
+                  width: double.infinity,
+                  padding: EdgeInsets.all(8), // pequeño espacio alrededor de la imagen
+                  decoration: BoxDecoration(
+                    color: Colors.white, // o gris claro si prefieres
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                  ),
+                  child: imagenPrincipal.isNotEmpty
+                      ? Image.network(
+                          imagenPrincipal,
+                          fit: BoxFit.contain, // 🔄 La imagen se adapta sin deformarse
+                          errorBuilder: (_, __, ___) =>
+                              Icon(Icons.broken_image, size: 50),
+                        )
+                      : Center(child: Icon(Icons.image_not_supported, size: 50)),
+                ),
+
+
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data['nombre'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '${data['precio']} MXN',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+);
+
                 },
               ),
             ),
