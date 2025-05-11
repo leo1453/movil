@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AddProductScreen extends StatefulWidget {
+  final String? productId;
+  final Map<String, dynamic>? existingData;
+
+  AddProductScreen({this.productId, this.existingData});
+
   @override
   _AddProductScreenState createState() => _AddProductScreenState();
 }
@@ -9,6 +15,7 @@ class AddProductScreen extends StatefulWidget {
 class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  // Controllers
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
   final TextEditingController _precioController = TextEditingController();
@@ -22,57 +29,97 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController _colorController = TextEditingController();
   final TextEditingController _dimensionesController = TextEditingController();
   final TextEditingController _pesoController = TextEditingController();
-  final TextEditingController _tiempoEntregaController =
-      TextEditingController();
+  final TextEditingController _tiempoEntregaController = TextEditingController();
 
   String? _selectedCategory;
   String? _selectedCondition;
   String? _selectedWarranty;
 
-  void _guardarProducto() async {
-    if (_formKey.currentState!.validate()) {
-      try {
-        await FirebaseFirestore.instance.collection('productos').add({
-          'nombre': _nombreController.text.trim(),
-          'descripcion': _descripcionController.text.trim(),
-          'precio': double.parse(_precioController.text.trim()),
-          'categoria': _selectedCategory,
-          'stock': int.parse(_stockController.text.trim()),
-          'imagenes': [
-            _imagen1Controller.text.trim(),
-            _imagen2Controller.text.trim(),
-            _imagen3Controller.text.trim(),
-          ],
-          'marca': _marcaController.text.trim(),
-          'modelo': _modeloController.text.trim(),
-          'material': _materialController.text.trim(),
-          'color': _colorController.text.trim(),
-          'dimensiones': _dimensionesController.text.trim(),
-          'peso': _pesoController.text.trim(),
-          'condicion': _selectedCondition,
-          'garantia': _selectedWarranty,
-          'tiempoEntrega': _tiempoEntregaController.text.trim(),
-        });
+  @override
+  void initState() {
+    super.initState();
+    final data = widget.existingData;
+    if (data != null) {
+      _nombreController.text = data['nombre'] ?? '';
+      _descripcionController.text = data['descripcion'] ?? '';
+      _precioController.text = data['precio']?.toString() ?? '';
+      _stockController.text = data['stock']?.toString() ?? '';
+      final imgs = data['imagenes'] as List<dynamic>? ?? [];
+      _imagen1Controller.text = imgs.length > 0 ? imgs[0] : '';
+      _imagen2Controller.text = imgs.length > 1 ? imgs[1] : '';
+      _imagen3Controller.text = imgs.length > 2 ? imgs[2] : '';
+      _marcaController.text = data['marca'] ?? '';
+      _modeloController.text = data['modelo'] ?? '';
+      _materialController.text = data['material'] ?? '';
+      _colorController.text = data['color'] ?? '';
+      _dimensionesController.text = data['dimensiones'] ?? '';
+      _pesoController.text = data['peso'] ?? '';
+      _tiempoEntregaController.text = data['tiempoEntrega'] ?? '';
+      _selectedCategory = data['categoria'];
+      _selectedCondition = data['condicion'];
+      _selectedWarranty = data['garantia'];
+    }
+  }
 
+  void _guardarProducto() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final payload = {
+      'nombre': _nombreController.text.trim(),
+      'descripcion': _descripcionController.text.trim(),
+      'precio': double.parse(_precioController.text.trim()),
+      'categoria': _selectedCategory,
+      'stock': int.parse(_stockController.text.trim()),
+      'imagenes': [
+        _imagen1Controller.text.trim(),
+        _imagen2Controller.text.trim(),
+        _imagen3Controller.text.trim(),
+      ],
+      'marca': _marcaController.text.trim(),
+      'modelo': _modeloController.text.trim(),
+      'material': _materialController.text.trim(),
+      'color': _colorController.text.trim(),
+      'dimensiones': _dimensionesController.text.trim(),
+      'peso': _pesoController.text.trim(),
+      'condicion': _selectedCondition,
+      'garantia': _selectedWarranty,
+      'tiempoEntrega': _tiempoEntregaController.text.trim(),
+    };
+
+    try {
+      final col = FirebaseFirestore.instance.collection('productos');
+      if (widget.productId != null) {
+        // Actualizar producto existente
+        await col.doc(widget.productId).update(payload);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Producto actualizado exitosamente')),
+        );
+      } else {
+        // Crear nuevo producto
+        payload['ownerId'] = FirebaseAuth.instance.currentUser!.uid;
+        await col.add(payload);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Producto agregado exitosamente')),
         );
-
-        Navigator.pop(context);
-      } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error al agregar: $e')));
       }
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al guardar: \$e')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.productId != null;
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('Agregar Producto', style: TextStyle(color: Colors.white)),
+        title: Text(
+          isEditing ? 'Editar Producto' : 'Agregar Producto',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.deepPurple,
       ),
       body: Padding(
@@ -98,11 +145,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 label: 'Categoría',
                 value: _selectedCategory,
                 items: ['Anime', 'Videojuegos', 'Cómics', 'Películas'],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                },
+                onChanged: (value) => setState(() => _selectedCategory = value),
               ),
               Divider(height: 32),
 
@@ -129,21 +172,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 label: 'Condición',
                 value: _selectedCondition,
                 items: ['Nuevo', 'Usado'],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCondition = value;
-                  });
-                },
+                onChanged: (value) => setState(() => _selectedCondition = value),
               ),
               _buildDropdownField(
                 label: 'Garantía',
                 value: _selectedWarranty,
                 items: ['Sí', 'No'],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedWarranty = value;
-                  });
-                },
+                onChanged: (value) => setState(() => _selectedWarranty = value),
               ),
               _buildTextField(
                 _tiempoEntregaController,
@@ -161,7 +196,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                 ),
                 child: Text(
-                  'Guardar Producto',
+                  isEditing ? 'Actualizar Producto' : 'Guardar Producto',
                   style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
@@ -203,10 +238,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
         value: value,
-        items:
-            items.map((item) {
-              return DropdownMenuItem(value: item, child: Text(item));
-            }).toList(),
+        items: items.map((item) {
+          return DropdownMenuItem(value: item, child: Text(item));
+        }).toList(),
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,

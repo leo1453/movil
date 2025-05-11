@@ -10,6 +10,7 @@ import 'login_screen.dart';
 import 'order_history_screen.dart';
 import 'favorites_screen.dart';
 import 'profile_screen.dart';
+import 'MisProductosScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -255,25 +256,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     final image = _obtenerImagenPrincipal(productMap);
 
                     return ProductCard(
-  title: productMap['nombre'] ?? '',
-  price: '${productMap['precio']} MXN',
-  image: image,
-  isFavorite: isFavorite(productMap),
-  productId: doc.id,
-  stock: productMap['stock'] ?? 0, // ✅ ESTA LÍNEA ES LA CLAVE
-  onTap: () async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ProductDetailScreen(productData: productMap),
-      ),
-    );
-    await _loadFavorites();
-  },
-  onFavoriteToggle: () => toggleFavorite(productMap),
-  onAddToCart: () => _addProductToCart(productMap),
-);
-
+                      title: productMap['nombre'] ?? '',
+                      price: '${productMap['precio']} MXN',
+                      image: image,
+                      isFavorite: isFavorite(productMap),
+                      productId: doc.id,
+                      stock:
+                          productMap['stock'] ?? 0, // ✅ ESTA LÍNEA ES LA CLAVE
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => ProductDetailScreen(
+                                  productData: productMap,
+                                ),
+                          ),
+                        );
+                        await _loadFavorites();
+                      },
+                      onFavoriteToggle: () => toggleFavorite(productMap),
+                      onAddToCart: () => _addProductToCart(productMap),
+                    );
                   },
                 );
               },
@@ -356,6 +360,12 @@ class _HomeScreenState extends State<HomeScreen> {
             'Historial de pedidos',
             Icons.history,
             OrderHistoryScreen(),
+          ),
+          _buildDrawerItem(
+            context,
+            'Mis productos',
+            Icons.history,
+            MisProductosScreen(),
           ),
           _buildDrawerItem(
             context,
