@@ -14,7 +14,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
-      TextEditingController(); // 👈 Nuevo controlador
+      TextEditingController();
 
   void _register() async {
     if (_formKey.currentState!.validate()) {
@@ -90,7 +90,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 SizedBox(height: 32.0),
-
                 TextFormField(
                   controller: _usernameController,
                   decoration: InputDecoration(
@@ -110,7 +109,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   },
                 ),
                 SizedBox(height: 16.0),
-
                 TextFormField(
                   controller: _emailController,
                   decoration: InputDecoration(
@@ -127,14 +125,13 @@ class _RegisterPageState extends State<RegisterPage> {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingrese su correo';
                     }
-                    if (!value.contains('@')) {
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                       return 'Ingrese un correo válido';
                     }
                     return null;
                   },
                 ),
                 SizedBox(height: 16.0),
-
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
@@ -158,10 +155,8 @@ class _RegisterPageState extends State<RegisterPage> {
                   },
                 ),
                 SizedBox(height: 16.0),
-
                 TextFormField(
-                  controller:
-                      _confirmPasswordController, // 👈 Campo repetir contraseña
+                  controller: _confirmPasswordController,
                   decoration: InputDecoration(
                     labelText: 'Confirmar Contraseña',
                     prefixIcon: Icon(Icons.lock_outline),
@@ -179,9 +174,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     return null;
                   },
                 ),
-
                 SizedBox(height: 24.0),
-
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -198,7 +191,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 SizedBox(height: 16.0),
-
                 TextButton(
                   onPressed: () {
                     Navigator.pushReplacement(
