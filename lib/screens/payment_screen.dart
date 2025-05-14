@@ -60,146 +60,159 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   void _confirmPurchase() async {
-  if (_formKey.currentState!.validate()) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) throw Exception('Usuario no autenticado');
-
-  final uid = user.uid;
-
-  // 🛑 Verificar stock disponible antes de comprar
-  for (var item in widget.cartProducts) {
-    final nombreProducto = item['nombre'];
-    final cantidadComprada = item['cantidad'];
-
-    final query = await FirebaseFirestore.instance
-        .collection('productos')
-        .where('nombre', isEqualTo: nombreProducto)
-        .get();
-
-    if (query.docs.isEmpty) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Producto no encontrado: $nombreProducto')),
+    if (_formKey.currentState!.validate()) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => Center(child: CircularProgressIndicator()),
       );
-      return;
-    }
 
-    final stockActual = query.docs.first['stock'] ?? 0;
-    if (cantidadComprada > stockActual) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Stock insuficiente para "$nombreProducto". Solo hay $stockActual disponibles.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-  }
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) throw Exception('Usuario no autenticado');
 
-  // ✅ Si hay suficiente stock, proceder con la compra
-  final cardLast4 = _cardNumberController.text.length >= 4
-      ? _cardNumberController.text.substring(
-          _cardNumberController.text.length - 4,
-        )
-      : '';
+        final uid = user.uid;
 
-  final orderData = {
-    'productos': widget.cartProducts,
-    'total': totalAmount,
-    'direccion': {
-      'nombre': _nameController.text,
-      'telefono': _phoneController.text,
-      'direccion': _addressController.text,
-      'ciudad': _cityController.text,
-      'codigoPostal': _postalCodeController.text,
-    },
-    'metodoPago': _selectedPaymentMethod,
-    'tarjetaFinal': cardLast4,
-    'fecha': Timestamp.now(),
-    'estado': 'Pendiente',
-  };
+        // 🛑 Verificar stock disponible antes de comprar
+        for (var item in widget.cartProducts) {
+          final nombreProducto = item['nombre'];
+          final cantidadComprada = item['cantidad'];
 
-  final userRef = FirebaseFirestore.instance.collection('usuarios').doc(uid);
-  final globalRef = FirebaseFirestore.instance.collection('pedidos_globales');
+          final query =
+              await FirebaseFirestore.instance
+                  .collection('productos')
+                  .where('nombre', isEqualTo: nombreProducto)
+                  .get();
 
-  await userRef.collection('pedidos').add(orderData);
-  await globalRef.add({...orderData, 'uid': uid});
-
-  // 🔄 ACTUALIZAR STOCK después de validar
-  for (var item in widget.cartProducts) {
-    final nombreProducto = item['nombre'];
-    final cantidadComprada = item['cantidad'];
-
-    final query = await FirebaseFirestore.instance
-        .collection('productos')
-        .where('nombre', isEqualTo: nombreProducto)
-        .get();
-
-    if (query.docs.isNotEmpty) {
-      final docRef = query.docs.first.reference;
-      final currentStock = query.docs.first['stock'] ?? 0;
-      final nuevoStock = (currentStock - cantidadComprada).clamp(0, currentStock);
-      await docRef.update({'stock': nuevoStock});
-    }
-  }
-
-  // 🧹 Vaciar carrito
-  final carrito = userRef.collection('carrito');
-  final snapshot = await carrito.get();
-  for (var doc in snapshot.docs) {
-    await doc.reference.delete();
-  }
-
-  Navigator.pop(context); // Cierra loading
-  await showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: Text('¡Compra exitosa!'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Gracias por tu compra.'),
-          SizedBox(height: 10),
-          ...widget.cartProducts
-              .map((p) => Text('- ${p['nombre']} x${p['cantidad']}'))
-              .toList(),
-          SizedBox(height: 10),
-          Text('Total: \$${totalAmount.toStringAsFixed(2)} MXN'),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () {
+          if (query.docs.isEmpty) {
             Navigator.pop(context);
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => HomeScreen()),
-              (route) => false,
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Producto no encontrado: $nombreProducto'),
+              ),
             );
+            return;
+          }
+
+          final stockActual = query.docs.first['stock'] ?? 0;
+          if (cantidadComprada > stockActual) {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Stock insuficiente para "$nombreProducto". Solo hay $stockActual disponibles.',
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+        }
+
+        // ✅ Si hay suficiente stock, proceder con la compra
+        final cardLast4 =
+            _cardNumberController.text.length >= 4
+                ? _cardNumberController.text.substring(
+                  _cardNumberController.text.length - 4,
+                )
+                : '';
+
+        final orderData = {
+          'productos': widget.cartProducts,
+          'total': totalAmount,
+          'direccion': {
+            'nombre': _nameController.text,
+            'telefono': _phoneController.text,
+            'direccion': _addressController.text,
+            'ciudad': _cityController.text,
+            'codigoPostal': _postalCodeController.text,
           },
-          child: Text('Volver al inicio'),
-        ),
-      ],
-    ),
-  );
-} catch (e) {
-  Navigator.pop(context);
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('Error: $e')),
-  );
-}
+          'metodoPago': _selectedPaymentMethod,
+          'tarjetaFinal': cardLast4,
+          'fecha': Timestamp.now(),
+          'estado': 'Pendiente',
+        };
 
+        final userRef = FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(uid);
+        final globalRef = FirebaseFirestore.instance.collection(
+          'pedidos_globales',
+        );
+
+        await userRef.collection('pedidos').add(orderData);
+        await globalRef.add({...orderData, 'uid': uid});
+
+        // 🔄 ACTUALIZAR STOCK después de validar
+        for (var item in widget.cartProducts) {
+          final nombreProducto = item['nombre'];
+          final cantidadComprada = item['cantidad'];
+
+          final query =
+              await FirebaseFirestore.instance
+                  .collection('productos')
+                  .where('nombre', isEqualTo: nombreProducto)
+                  .get();
+
+          if (query.docs.isNotEmpty) {
+            final docRef = query.docs.first.reference;
+            final currentStock = query.docs.first['stock'] ?? 0;
+            final nuevoStock = (currentStock - cantidadComprada).clamp(
+              0,
+              currentStock,
+            );
+            await docRef.update({'stock': nuevoStock});
+          }
+        }
+
+        // 🧹 Vaciar carrito
+        final carrito = userRef.collection('carrito');
+        final snapshot = await carrito.get();
+        for (var doc in snapshot.docs) {
+          await doc.reference.delete();
+        }
+
+        Navigator.pop(context); // Cierra loading
+        await showDialog(
+          context: context,
+          builder:
+              (_) => AlertDialog(
+                title: Text('¡Compra exitosa!'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Gracias por tu compra.'),
+                    SizedBox(height: 10),
+                    ...widget.cartProducts
+                        .map((p) => Text('- ${p['nombre']} x${p['cantidad']}'))
+                        .toList(),
+                    SizedBox(height: 10),
+                    Text('Total: \$${totalAmount.toStringAsFixed(2)} MXN'),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => HomeScreen()),
+                        (route) => false,
+                      );
+                    },
+                    child: Text('Volver al inicio'),
+                  ),
+                ],
+              ),
+        );
+      } catch (e) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
-}
-
 
   Widget buildTextField({
     required String label,
@@ -254,19 +267,25 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           buildTextField(
             label: 'Fecha de expiración',
-            hint: 'Ej. 0526',
+            hint: 'Ej. 05/26',
             icon: Icons.date_range,
             controller: _expiryDateController,
             inputType: TextInputType.number,
-            inputFormatters: [LengthLimitingTextInputFormatter(4)],
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(5),
+              ExpiryDateTextInputFormatter(), // 👈 aquí se aplica
+            ],
             validator: (v) {
-              if (v == null || v.length != 4)
-                return 'Debe tener 4 dígitos (MMAA)';
-              final mes = int.tryParse(v.substring(0, 2));
+              if (v == null || v.length != 5 || !v.contains('/')) {
+                return 'Formato inválido (MM/AA)';
+              }
+              final parts = v.split('/');
+              final mes = int.tryParse(parts[0]);
               if (mes == null || mes < 1 || mes > 12) return 'Mes inválido';
               return null;
             },
           ),
+
           buildTextField(
             label: 'CVV',
             hint: 'Ej. 123',
@@ -410,6 +429,32 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class ExpiryDateTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    String digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digits.length > 4) {
+      digits = digits.substring(0, 4);
+    }
+
+    String formatted = '';
+    if (digits.length >= 3) {
+      formatted = '${digits.substring(0, 2)}/${digits.substring(2)}';
+    } else {
+      formatted = digits;
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
