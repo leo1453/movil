@@ -16,8 +16,9 @@ class _MisProductosScreenState extends State<MisProductosScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Mis Productos'),
+        title: Text('Mis Productos', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.deepPurple,
+        iconTheme: IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: Icon(Icons.add),

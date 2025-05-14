@@ -29,7 +29,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController _colorController = TextEditingController();
   final TextEditingController _dimensionesController = TextEditingController();
   final TextEditingController _pesoController = TextEditingController();
-  final TextEditingController _tiempoEntregaController = TextEditingController();
+  final TextEditingController _tiempoEntregaController =
+      TextEditingController();
 
   String? _selectedCategory;
   String? _selectedCondition;
@@ -104,9 +105,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar: \$e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error al guardar: \$e')));
     }
   }
 
@@ -121,6 +122,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: Colors.deepPurple,
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -172,7 +174,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 label: 'Condición',
                 value: _selectedCondition,
                 items: ['Nuevo', 'Usado'],
-                onChanged: (value) => setState(() => _selectedCondition = value),
+                onChanged:
+                    (value) => setState(() => _selectedCondition = value),
               ),
               _buildDropdownField(
                 label: 'Garantía',
@@ -238,9 +241,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
         value: value,
-        items: items.map((item) {
-          return DropdownMenuItem(value: item, child: Text(item));
-        }).toList(),
+        items:
+            items.map((item) {
+              return DropdownMenuItem(value: item, child: Text(item));
+            }).toList(),
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,

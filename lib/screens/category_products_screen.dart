@@ -25,18 +25,15 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   Future<void> _loadFavorites() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final favSnapshot = await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(user.uid)
-          .collection('favoritos')
-          .get();
+      final favSnapshot =
+          await FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(user.uid)
+              .collection('favoritos')
+              .get();
 
-      List<Map<String, dynamic>> favoritos = favSnapshot.docs
-          .map((doc) => {
-                'id': doc.id,
-                ...doc.data(),
-              })
-          .toList();
+      List<Map<String, dynamic>> favoritos =
+          favSnapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
 
       setState(() {
         favoriteProducts = favoritos;
@@ -53,10 +50,13 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         .doc(user.uid)
         .collection('favoritos');
 
-    final exists = favoriteProducts.any((p) => p['nombre'] == product['nombre']);
+    final exists = favoriteProducts.any(
+      (p) => p['nombre'] == product['nombre'],
+    );
     final productWithId = Map<String, dynamic>.from(product);
 
-    if (!productWithId.containsKey('id') || productWithId['id'].toString().isEmpty) {
+    if (!productWithId.containsKey('id') ||
+        productWithId['id'].toString().isEmpty) {
       productWithId['id'] = product['id'] ?? product['productId'] ?? '';
     }
 
@@ -81,9 +81,9 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         favoriteProducts.add(productWithId);
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Producto añadido a favoritos')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Producto añadido a favoritos')));
     }
   }
 
@@ -99,16 +99,16 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
           .doc(user.uid)
           .collection('carrito')
           .add({
-        'nombre': product['nombre'],
-        'precio': product['precio'],
-        'imagen': _obtenerImagenPrincipal(product),
-        'cantidad': 1,
-        'fechaAgregado': FieldValue.serverTimestamp(),
-      });
+            'nombre': product['nombre'],
+            'precio': product['precio'],
+            'imagen': _obtenerImagenPrincipal(product),
+            'cantidad': 1,
+            'fechaAgregado': FieldValue.serverTimestamp(),
+          });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Producto agregado al carrito')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Producto agregado al carrito')));
     }
   }
 
@@ -116,14 +116,19 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.categoriaSeleccionada),
+        title: Text(
+          widget.categoriaSeleccionada,
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.deepPurple,
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('productos')
-            .where('categoria', isEqualTo: widget.categoriaSeleccionada)
-            .snapshots(),
+        stream:
+            FirebaseFirestore.instance
+                .collection('productos')
+                .where('categoria', isEqualTo: widget.categoriaSeleccionada)
+                .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -148,36 +153,32 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
               final producto = productos[index];
               final data = producto.data() as Map<String, dynamic>;
 
-              final productMap = {
-                'id': producto.id,
-                ...data,
-              };
+              final productMap = {'id': producto.id, ...data};
 
               final imagenUrl = _obtenerImagenPrincipal(productMap);
 
               return ProductCard(
-  title: (data['nombre'] ?? 'Producto').toString(),
-  price: '${data['precio'] ?? 0} MXN',
-  image: imagenUrl,
-  isFavorite: isFavorite(productMap),
-  productId: producto.id,
-  stock: data['stock'] ?? 0, // ✅ Línea clave
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProductDetailScreen(
-          productData: productMap,
-        ),
-      ),
-    );
-  },
-  onFavoriteToggle: () {
-    toggleFavorite(productMap);
-  },
-  onAddToCart: () => _addProductToCart(productMap),
-);
-
+                title: (data['nombre'] ?? 'Producto').toString(),
+                price: '${data['precio'] ?? 0} MXN',
+                image: imagenUrl,
+                isFavorite: isFavorite(productMap),
+                productId: producto.id,
+                stock: data['stock'] ?? 0, // ✅ Línea clave
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) =>
+                              ProductDetailScreen(productData: productMap),
+                    ),
+                  );
+                },
+                onFavoriteToggle: () {
+                  toggleFavorite(productMap);
+                },
+                onAddToCart: () => _addProductToCart(productMap),
+              );
             },
           );
         },
@@ -190,8 +191,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         data['imagenes'] is List &&
         data['imagenes'].isNotEmpty) {
       return data['imagenes'][0];
-    } else if (data['imagen'] != null &&
-        data['imagen'].toString().isNotEmpty) {
+    } else if (data['imagen'] != null && data['imagen'].toString().isNotEmpty) {
       return data['imagen'];
     } else {
       return '';

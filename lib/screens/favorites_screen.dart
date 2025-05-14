@@ -56,7 +56,7 @@ class FavoritesScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('Mis favoritos'),
+        title: Text('Mis favoritos', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.deepPurple,
         iconTheme: IconThemeData(color: Colors.white),
       ),
@@ -87,10 +87,11 @@ class FavoritesScreen extends StatelessWidget {
               final productId = data['id'];
 
               return FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance
-                    .collection('productos')
-                    .doc(productId)
-                    .get(),
+                future:
+                    FirebaseFirestore.instance
+                        .collection('productos')
+                        .doc(productId)
+                        .get(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Card(
@@ -120,7 +121,9 @@ class FavoritesScreen extends StatelessWidget {
                       onTap: () {
                         if (data['id'] == null) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Este producto no tiene ID válido')),
+                            SnackBar(
+                              content: Text('Este producto no tiene ID válido'),
+                            ),
                           );
                           return;
                         }
@@ -128,7 +131,8 @@ class FavoritesScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ProductDetailScreen(productData: data),
+                            builder:
+                                (_) => ProductDetailScreen(productData: data),
                           ),
                         );
                       },
@@ -144,24 +148,30 @@ class FavoritesScreen extends StatelessWidget {
                                 width: 70,
                                 height: 70,
                                 decoration: BoxDecoration(color: Colors.white),
-                                child: imagenUrl.isNotEmpty
-                                    ? FittedBox(
-                                        fit: BoxFit.cover,
-                                        clipBehavior: Clip.hardEdge,
-                                        child: Image.network(
-                                          imagenUrl,
-                                          width: 70,
-                                          height: 70,
-                                          errorBuilder: (_, __, ___) => Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                                child:
+                                    imagenUrl.isNotEmpty
+                                        ? FittedBox(
+                                          fit: BoxFit.cover,
+                                          clipBehavior: Clip.hardEdge,
+                                          child: Image.network(
+                                            imagenUrl,
+                                            width: 70,
+                                            height: 70,
+                                            errorBuilder:
+                                                (_, __, ___) => Icon(
+                                                  Icons.broken_image,
+                                                  size: 40,
+                                                  color: Colors.grey,
+                                                ),
+                                          ),
+                                        )
+                                        : Center(
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                            size: 40,
+                                            color: Colors.grey,
+                                          ),
                                         ),
-                                      )
-                                    : Center(
-                                        child: Icon(
-                                          Icons.image_not_supported,
-                                          size: 40,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
                               ),
                             ),
                             SizedBox(width: 16),
@@ -200,12 +210,19 @@ class FavoritesScreen extends StatelessWidget {
                               ),
                             ),
                             IconButton(
-                              icon: Icon(Icons.favorite, color: Colors.redAccent),
+                              icon: Icon(
+                                Icons.favorite,
+                                color: Colors.redAccent,
+                              ),
                               tooltip: 'Eliminar de favoritos',
                               onPressed: () async {
                                 await _removeFavorite(data['nombre']);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Producto eliminado de favoritos')),
+                                  SnackBar(
+                                    content: Text(
+                                      'Producto eliminado de favoritos',
+                                    ),
+                                  ),
                                 );
                               },
                             ),

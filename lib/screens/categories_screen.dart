@@ -20,6 +20,7 @@ class CategoriesScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('Categorías', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.deepPurple,
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       body: GridView.count(
         crossAxisCount: 2,
