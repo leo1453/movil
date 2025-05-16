@@ -18,6 +18,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   String? _emailError;
   String? _usernameError;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   Future<bool> _isUsernameTaken(String username) async {
     final result =
@@ -48,7 +50,6 @@ class _RegisterPageState extends State<RegisterPage> {
         return;
       }
 
-      // Verificar si el nombre de usuario ya existe
       final usernameTaken = await _isUsernameTaken(username);
       if (usernameTaken) {
         setState(() {
@@ -180,13 +181,25 @@ class _RegisterPageState extends State<RegisterPage> {
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
                     prefixIcon: Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     filled: true,
                     fillColor: Colors.white,
                   ),
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingrese una contraseña';
@@ -203,13 +216,25 @@ class _RegisterPageState extends State<RegisterPage> {
                   decoration: InputDecoration(
                     labelText: 'Confirmar Contraseña',
                     prefixIcon: Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureConfirmPassword = !_obscureConfirmPassword;
+                        });
+                      },
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     filled: true,
                     fillColor: Colors.white,
                   ),
-                  obscureText: true,
+                  obscureText: _obscureConfirmPassword,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor confirme su contraseña';
