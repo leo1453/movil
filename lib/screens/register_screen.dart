@@ -16,8 +16,26 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+  String? _emailError;
+  String? _usernameError;
+
+  Future<bool> _isUsernameTaken(String username) async {
+    final result =
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .where('nombre', isEqualTo: username)
+            .limit(1)
+            .get();
+    return result.docs.isNotEmpty;
+  }
+
   void _register() async {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        _emailError = null;
+        _usernameError = null;
+      });
+
       final username = _usernameController.text.trim();
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
@@ -27,6 +45,15 @@ class _RegisterPageState extends State<RegisterPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Las contraseñas no coinciden')));
+        return;
+      }
+
+      // Verificar si el nombre de usuario ya existe
+      final usernameTaken = await _isUsernameTaken(username);
+      if (usernameTaken) {
+        setState(() {
+          _usernameError = 'Este nombre de usuario ya está en uso';
+        });
         return;
       }
 
@@ -51,12 +78,26 @@ class _RegisterPageState extends State<RegisterPage> {
           MaterialPageRoute(builder: (context) => LoginPage()),
         );
       } on FirebaseAuthException catch (e) {
-        String errorMsg = 'Error al registrar: ${e.message}';
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(errorMsg)));
+        if (e.code == 'email-already-in-use') {
+          setState(() {
+            _emailError = 'Este correo ya está registrado';
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al registrar: ${e.message}')),
+          );
+        }
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -100,6 +141,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     filled: true,
                     fillColor: Colors.white,
+                    errorText: _usernameError,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -119,6 +161,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     filled: true,
                     fillColor: Colors.white,
+                    errorText: _emailError,
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
