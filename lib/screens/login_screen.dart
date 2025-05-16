@@ -14,6 +14,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   String _generalError = '';
+  bool _obscurePassword = true;
 
   @override
   void initState() {
@@ -64,7 +65,6 @@ class _LoginPageState extends State<LoginPage> {
         );
       } on FirebaseAuthException catch (e) {
         setState(() {
-          // No mostrar errores técnicos de Firebase
           if (e.code == 'user-not-found' || e.code == 'wrong-password') {
             _generalError = 'Correo o contraseña incorrectos.';
           } else if (e.code == 'invalid-email') {
@@ -91,7 +91,6 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Imagen del logo
                 ClipOval(
                   child: Image.asset(
                     'assets/imagenes/logo.png',
@@ -101,8 +100,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 SizedBox(height: 24.0),
-
-                // Título
                 Text(
                   'Bienvenido a Figurarte',
                   style: TextStyle(
@@ -113,8 +110,6 @@ class _LoginPageState extends State<LoginPage> {
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 32.0),
-
-                // Campo de correo
                 TextFormField(
                   controller: _emailController,
                   decoration: InputDecoration(
@@ -138,20 +133,30 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
                 SizedBox(height: 16.0),
-
-                // Campo de contraseña
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
                     prefixIcon: Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     filled: true,
                     fillColor: Colors.white,
                   ),
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingrese su contraseña';
@@ -163,8 +168,6 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
                 SizedBox(height: 16.0),
-
-                // Mostrar error general (si existe)
                 if (_generalError.isNotEmpty)
                   Text(
                     _generalError,
@@ -172,8 +175,6 @@ class _LoginPageState extends State<LoginPage> {
                     textAlign: TextAlign.center,
                   ),
                 SizedBox(height: 24.0),
-
-                // Botón de iniciar sesión
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -192,8 +193,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-
-                // Registro
                 TextButton(
                   onPressed: () {
                     Navigator.push(
