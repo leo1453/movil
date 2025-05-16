@@ -30,45 +30,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text(
-          product['nombre'] ?? 'Producto',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.deepPurple,
-        iconTheme: IconThemeData(color: Colors.white),
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: Icon(Icons.shopping_cart),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => CartScreen()),
-                  );
-                },
-              ),
-              if (_cartItemCount > 0)
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: Container(
-                    padding: EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '$_cartItemCount',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
+      
+        appBar: AppBar(
+  title: Text(
+    product['nombre'] ?? 'Producto',
+    style: TextStyle(color: Colors.white),
+  ),
+  backgroundColor: Colors.deepPurple,
+  iconTheme: IconThemeData(color: Colors.white),
+  actions: [
+    IconButton(
+      icon: Icon(Icons.shopping_cart, color: Colors.white),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => CartScreen()),
+        );
+      },
+    ),
+  ],
+),
+
+      
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(

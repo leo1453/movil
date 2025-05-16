@@ -156,36 +156,19 @@ class _HomeScreenState extends State<HomeScreen> {
               await _loadFavorites(); // opcional: recarga favoritos al volver
             },
           ),
-          Stack(
-            children: [
-              IconButton(
-                icon: Icon(Icons.shopping_cart, color: Colors.white),
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => CartScreen()),
-                  );
-                  await _loadCartItemCount(); // recarga carrito al volver
-                },
-              ),
-              if (_cartItemCount > 0)
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: Container(
-                    padding: EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '$_cartItemCount',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+    IconButton(
+          icon: Icon(Icons.shopping_cart, color: Colors.white),
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CartScreen()),
+            );
+            // si quieres, puedes seguir recargando el conteo internamente,
+            // pero no se mostrará en UI
+            await _loadCartItemCount();
+          },
+        ),
+
         ],
       ),
 
