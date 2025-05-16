@@ -156,19 +156,18 @@ class _HomeScreenState extends State<HomeScreen> {
               await _loadFavorites(); // opcional: recarga favoritos al volver
             },
           ),
-    IconButton(
-          icon: Icon(Icons.shopping_cart, color: Colors.white),
-          onPressed: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => CartScreen()),
-            );
-            // si quieres, puedes seguir recargando el conteo internamente,
-            // pero no se mostrará en UI
-            await _loadCartItemCount();
-          },
-        ),
-
+          IconButton(
+            icon: Icon(Icons.shopping_cart, color: Colors.white),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => CartScreen()),
+              );
+              // si quieres, puedes seguir recargando el conteo internamente,
+              // pero no se mostrará en UI
+              await _loadCartItemCount();
+            },
+          ),
         ],
       ),
 
@@ -307,73 +306,76 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDrawer(BuildContext context) {
-    return Drawer(
-      child: Column(
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(color: Colors.deepPurple),
-            child: Container(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Menú',
-                style: TextStyle(color: Colors.white, fontSize: 24),
+    return // Después
+    Drawer(
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(color: Colors.deepPurple),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Menú',
+                  style: TextStyle(color: Colors.white, fontSize: 24),
+                ),
               ),
             ),
-          ),
-          _buildDrawerItem(
-            context,
-            'Categorías',
-            Icons.category,
-            CategoriesScreen(),
-          ),
-          _buildDrawerItem(
-            context,
-            'Carrito',
-            Icons.shopping_cart,
-            CartScreen(),
-          ),
-          _buildDrawerItem(
-            context,
-            'Favoritos',
-            Icons.favorite,
-            FavoritesScreen(),
-          ),
-          _buildDrawerItem(
-            context,
-            'Historial de pedidos',
-            Icons.history,
-            OrderHistoryScreen(),
-          ),
-          _buildDrawerItem(
-            context,
-            'Mis productos',
-            Icons.history,
-            MisProductosScreen(),
-          ),
-          _buildDrawerItem(
-            context,
-            'Perfil de usuario',
-            Icons.person,
-            ProfileScreen(),
-          ),
-          Spacer(),
-          Divider(),
-          ListTile(
-            leading: Icon(Icons.logout, color: Colors.deepPurple),
-            title: Text(
-              'Cerrar sesión',
-              style: TextStyle(color: Colors.deepPurple),
+            _buildDrawerItem(
+              context,
+              'Categorías',
+              Icons.category,
+              CategoriesScreen(),
             ),
-            onTap: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => LoginPage()),
-                (route) => false,
-              );
-            },
-          ),
-        ],
+            _buildDrawerItem(
+              context,
+              'Carrito',
+              Icons.shopping_cart,
+              CartScreen(),
+            ),
+            _buildDrawerItem(
+              context,
+              'Favoritos',
+              Icons.favorite,
+              FavoritesScreen(),
+            ),
+            _buildDrawerItem(
+              context,
+              'Historial de pedidos',
+              Icons.history,
+              OrderHistoryScreen(),
+            ),
+            _buildDrawerItem(
+              context,
+              'Mis productos',
+              Icons.history,
+              MisProductosScreen(),
+            ),
+            _buildDrawerItem(
+              context,
+              'Perfil de usuario',
+              Icons.person,
+              ProfileScreen(),
+            ),
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.logout, color: Colors.deepPurple),
+              title: Text(
+                'Cerrar sesión',
+                style: TextStyle(color: Colors.deepPurple),
+              ),
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => LoginPage()),
+                  (route) => false,
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
