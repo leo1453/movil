@@ -31,7 +31,9 @@ class OrderDetailScreen extends StatelessWidget {
             // Fecha del pedido
             _buildSectionTitle('Fecha del pedido'),
             Text(
-              '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}',
+              '${fecha.day.toString().padLeft(2, '0')}/'
+              '${fecha.month.toString().padLeft(2, '0')}/'
+              '${fecha.year}',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 24),
@@ -40,6 +42,7 @@ class OrderDetailScreen extends StatelessWidget {
             _buildSectionTitle('Productos'),
             SizedBox(height: 8),
             ...productos.map<Widget>((p) {
+              final imagenUrl = p['imagen'] ?? '';
               return Card(
                 margin: EdgeInsets.symmetric(vertical: 6),
                 elevation: 3,
@@ -48,15 +51,38 @@ class OrderDetailScreen extends StatelessWidget {
                 ),
                 child: ListTile(
                   contentPadding: EdgeInsets.all(12),
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      p['imagen'] ?? '',
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Icon(Icons.broken_image),
+                  
+                  minLeadingWidth: 60,
+                  leading: SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: (imagenUrl.toString().startsWith('http'))
+                          ? Image.network(
+                              imagenUrl,
+                              fit: BoxFit.contain,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stack) => Container(
+                                color: Colors.grey[300],
+                                alignment: Alignment.center,
+                                child: Icon(Icons.broken_image, size: 30, color: Colors.grey),
+                              ),
+                            )
+                          : Container(
+                              color: Colors.grey[300],
+                              alignment: Alignment.center,
+                              child: Icon(Icons.broken_image, size: 30, color: Colors.grey),
+                            ),
                     ),
                   ),
                   title: Text(

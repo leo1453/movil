@@ -33,11 +33,10 @@ class _MisProductosScreenState extends State<MisProductosScreen> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream:
-            FirebaseFirestore.instance
-                .collection('productos')
-                .where('ownerId', isEqualTo: user.uid)
-                .snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('productos')
+            .where('ownerId', isEqualTo: user.uid)
+            .snapshots(),
         builder: (context, snap) {
           if (!snap.hasData) return Center(child: CircularProgressIndicator());
           final docs = snap.data!.docs;
@@ -54,29 +53,33 @@ class _MisProductosScreenState extends State<MisProductosScreen> {
               final productMap = {'id': doc.id, ...data};
 
               final String imageUrl =
-                  (data['imagenes'] != null &&
-                          (data['imagenes'] as List).isNotEmpty)
+                  (data['imagenes'] != null && (data['imagenes'] as List).isNotEmpty)
                       ? data['imagenes'][0]
                       : (data['imagen'] ?? '');
 
               return Card(
                 margin: EdgeInsets.symmetric(vertical: 6),
                 child: ListTile(
-                  leading: Image.network(
-                    imageUrl,
+                       // fuerza al ListTile a reservárselos
+                  minLeadingWidth: 50,
+                  leading: SizedBox(
                     width: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 50,
-                        height: 50,
-                        color: Colors.grey.shade200,
-                        child: Icon(
-                          Icons.image_not_supported,
-                          color: Colors.grey,
+                    height: 50,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Container(
+                        color: Colors.white,
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.contain, // muestra la imagen completa escalada
+                          width: 50,
+                          height: 50,
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Icon(Icons.image_not_supported, color: Colors.grey),
+                          ),
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                   title: Text(data['nombre'] ?? ''),
                   subtitle: Text('${data['precio']} MXN'),
@@ -89,11 +92,10 @@ class _MisProductosScreenState extends State<MisProductosScreen> {
                           await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder:
-                                  (_) => AddProductScreen(
-                                    productId: doc.id,
-                                    existingData: data,
-                                  ),
+                              builder: (_) => AddProductScreen(
+                                productId: doc.id,
+                                existingData: data,
+                              ),
                             ),
                           );
                           setState(() {});
@@ -104,25 +106,20 @@ class _MisProductosScreenState extends State<MisProductosScreen> {
                         onPressed: () async {
                           final ok = await showDialog<bool>(
                             context: context,
-                            builder:
-                                (_) => AlertDialog(
-                                  title: Text('Confirmar borrado'),
-                                  content: Text(
-                                    '¿Eliminar "${data['nombre']}"?',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed:
-                                          () => Navigator.pop(context, false),
-                                      child: Text('Cancelar'),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed:
-                                          () => Navigator.pop(context, true),
-                                      child: Text('Eliminar'),
-                                    ),
-                                  ],
+                            builder: (_) => AlertDialog(
+                              title: Text('Confirmar borrado'),
+                              content: Text('¿Eliminar "${data['nombre']}"?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: Text('Cancelar'),
                                 ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: Text('Eliminar'),
+                                ),
+                              ],
+                            ),
                           );
                           if (ok == true) {
                             await FirebaseFirestore.instance
@@ -137,15 +134,12 @@ class _MisProductosScreenState extends State<MisProductosScreen> {
                       ),
                     ],
                   ),
-                  onTap:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) =>
-                                  ProductDetailScreen(productData: productMap),
-                        ),
-                      ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProductDetailScreen(productData: productMap),
+                    ),
+                  ),
                 ),
               );
             },
