@@ -134,7 +134,6 @@ class CartScreen extends StatelessWidget {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  // Imagen segura
                                   SizedBox(
                                     width: 60,
                                     height: 60,
@@ -163,7 +162,6 @@ class CartScreen extends StatelessWidget {
 
                                   ),
                                   SizedBox(width: 12),
-                                  // Información del producto
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +187,6 @@ class CartScreen extends StatelessWidget {
                                     ),
                                   ),
                                   SizedBox(width: 8),
-                                  // Precio total y eliminar
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
@@ -217,7 +214,6 @@ class CartScreen extends StatelessWidget {
                         },
                       ),
                     ),
-                    // Footer Total
                     Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(

@@ -163,7 +163,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                 image: imagenUrl,
                 isFavorite: isFavorite(productMap),
                 productId: producto.id,
-                stock: data['stock'] ?? 0, // ✅ Línea clave
+                stock: data['stock'] ?? 0, 
                 onTap: () {
                   Navigator.push(
                     context,

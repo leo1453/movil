@@ -153,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 context,
                 MaterialPageRoute(builder: (_) => AddProductScreen()),
               );
-              await _loadFavorites(); // opcional: recarga favoritos al volver
+              await _loadFavorites(); 
             },
           ),
           IconButton(
@@ -163,8 +163,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 context,
                 MaterialPageRoute(builder: (_) => CartScreen()),
               );
-              // si quieres, puedes seguir recargando el conteo internamente,
-              // pero no se mostrará en UI
               await _loadCartItemCount();
             },
           ),
@@ -244,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       isFavorite: isFavorite(productMap),
                       productId: doc.id,
                       stock:
-                          productMap['stock'] ?? 0, // ✅ ESTA LÍNEA ES LA CLAVE
+                          productMap['stock'] ?? 0, 
                       onTap: () async {
                         await Navigator.push(
                           context,
@@ -306,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDrawer(BuildContext context) {
-    return // Después
+    return 
     Drawer(
       child: SafeArea(
         child: ListView(
@@ -394,7 +392,7 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           MaterialPageRoute(builder: (_) => screen),
         );
-        await _loadFavorites(); // 🔄 recarga favoritos al volver
+        await _loadFavorites(); 
       },
     );
   }

@@ -171,7 +171,6 @@ class _ProductCardState extends State<ProductCard> {
                 ],
               ),
             ),
-            // Etiqueta "Sin stock"
             if (widget.stock == 0)
               Positioned(
                 top: 8,

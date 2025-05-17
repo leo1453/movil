@@ -60,7 +60,6 @@ class _MisProductosScreenState extends State<MisProductosScreen> {
               return Card(
                 margin: EdgeInsets.symmetric(vertical: 6),
                 child: ListTile(
-                       // fuerza al ListTile a reservárselos
                   minLeadingWidth: 50,
                   leading: SizedBox(
                     width: 50,
@@ -71,7 +70,7 @@ class _MisProductosScreenState extends State<MisProductosScreen> {
                         color: Colors.white,
                         child: Image.network(
                           imageUrl,
-                          fit: BoxFit.contain, // muestra la imagen completa escalada
+                          fit: BoxFit.contain, 
                           width: 50,
                           height: 50,
                           errorBuilder: (context, error, stackTrace) => Center(

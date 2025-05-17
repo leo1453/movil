@@ -73,7 +73,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
         final uid = user.uid;
 
-        // 🛑 Verificar stock disponible antes de comprar
         for (var item in widget.cartProducts) {
           final nombreProducto = item['nombre'];
           final cantidadComprada = item['cantidad'];
@@ -109,7 +108,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
           }
         }
 
-        // ✅ Si hay suficiente stock, proceder con la compra
         final cardLast4 =
             _cardNumberController.text.length >= 4
                 ? _cardNumberController.text.substring(
@@ -143,7 +141,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
         await userRef.collection('pedidos').add(orderData);
         await globalRef.add({...orderData, 'uid': uid});
 
-        // 🔄 ACTUALIZAR STOCK después de validar
         for (var item in widget.cartProducts) {
           final nombreProducto = item['nombre'];
           final cantidadComprada = item['cantidad'];
@@ -165,14 +162,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
           }
         }
 
-        // 🧹 Vaciar carrito
         final carrito = userRef.collection('carrito');
         final snapshot = await carrito.get();
         for (var doc in snapshot.docs) {
           await doc.reference.delete();
         }
 
-        Navigator.pop(context); // Cierra loading
+        Navigator.pop(context); 
         await showDialog(
           context: context,
           builder:
@@ -273,7 +269,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             inputType: TextInputType.number,
             inputFormatters: [
               LengthLimitingTextInputFormatter(5),
-              ExpiryDateTextInputFormatter(), // 👈 aquí se aplica
+              ExpiryDateTextInputFormatter(), 
             ],
             validator: (v) {
               if (v == null || v.length != 5 || !v.contains('/')) {

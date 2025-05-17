@@ -65,17 +65,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ),
             SizedBox(height: 8),
             StreamBuilder<QuerySnapshot>(
-  stream: FirebaseFirestore.instance
-      .collection('productos')
-      .doc(widget.productData['id'])
-      .collection('comentarios')
-      .snapshots(),
-  builder: (context, snapshot) {
-    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-      return Row(
-        children: List.generate(5, (_) => Icon(Icons.star_border, size: 20, color: Colors.amber)),
-      );
-    }
+            stream: FirebaseFirestore.instance
+                .collection('productos')
+                .doc(widget.productData['id'])
+                .collection('comentarios')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Row(
+                  children: List.generate(5, (_) => Icon(Icons.star_border, size: 20, color: Colors.amber)),
+                );
+              }
 
     final docs = snapshot.data!.docs;
     double suma = 0;
@@ -105,7 +105,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }),
     SizedBox(width: 8),
     Text(
-      promedio.toStringAsFixed(1), // por ejemplo: "4.3"
+      promedio.toStringAsFixed(1), 
       style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
     ),
   ],
@@ -220,7 +220,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final difference = now.difference(date);
 
     if (difference.inDays > 7) {
-      return '${date.day}/${date.month}/${date.year}'; // formato normal si es muy viejo
+      return '${date.day}/${date.month}/${date.year}'; 
     } else if (difference.inDays >= 1) {
       return 'hace ${difference.inDays} día(s)';
     } else if (difference.inHours >= 1) {
@@ -251,7 +251,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   .toList();
         }
 
-        // Combinar los comentarios locales primero
         final todosComentarios = [..._comentariosLocal, ...comentarios];
 
         if (todosComentarios.isEmpty) return Text('No hay opiniones todavía.');
@@ -417,7 +416,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         hayStock ? 'Agregar al carrito' : 'Sin stock',
         style: TextStyle(color: Colors.white, fontSize: 18),
       ),
-      onPressed: hayStock ? _addToCart : null, // 🚫 Desactiva si no hay stock
+      onPressed: hayStock ? _addToCart : null, 
     ),
   );
 }

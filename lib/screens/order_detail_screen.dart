@@ -28,7 +28,6 @@ class OrderDetailScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            // Fecha del pedido
             _buildSectionTitle('Fecha del pedido'),
             Text(
               '${fecha.day.toString().padLeft(2, '0')}/'
@@ -38,7 +37,6 @@ class OrderDetailScreen extends StatelessWidget {
             ),
             SizedBox(height: 24),
 
-            // Productos
             _buildSectionTitle('Productos'),
             SizedBox(height: 8),
             ...productos.map<Widget>((p) {
@@ -102,7 +100,6 @@ class OrderDetailScreen extends StatelessWidget {
             }).toList(),
             SizedBox(height: 24),
 
-            // Total
             _buildSectionTitle('Total del pedido'),
             Text(
               '${total.toStringAsFixed(2)} MXN',
@@ -114,15 +111,13 @@ class OrderDetailScreen extends StatelessWidget {
             ),
             SizedBox(height: 24),
 
-            // Método de pago
             _buildSectionTitle('Método de pago'),
             Text(
               metodoPago,
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 24),
-
-            // Dirección de envío
+            
             _buildSectionTitle('Dirección de envío'),
             Card(
               margin: EdgeInsets.only(top: 8),

@@ -15,7 +15,6 @@ class AddProductScreen extends StatefulWidget {
 class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
   final TextEditingController _nombreController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
   final TextEditingController _precioController = TextEditingController();
@@ -90,13 +89,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
     try {
       final col = FirebaseFirestore.instance.collection('productos');
       if (widget.productId != null) {
-        // Actualizar producto existente
         await col.doc(widget.productId).update(payload);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Producto actualizado exitosamente')),
         );
       } else {
-        // Crear nuevo producto
         payload['ownerId'] = FirebaseAuth.instance.currentUser!.uid;
         await col.add(payload);
         ScaffoldMessenger.of(context).showSnackBar(
